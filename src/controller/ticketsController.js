@@ -1,6 +1,6 @@
 import logger from "../utils/logger.js";
 import { getTickets } from "../service/jitbit.services.js";
-import{buildHubspotTicketPayload} from "../utils/user.Payload.js";
+import{buildHubspotTicketPayload} from "../utils/All.Payload.js";
 
 async function syncTickets() {
   try {

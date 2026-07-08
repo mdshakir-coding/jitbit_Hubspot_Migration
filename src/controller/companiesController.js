@@ -1,6 +1,6 @@
 import logger from "../utils/logger.js";
 import { getCompanies } from "../service/jitbit.services.js";
-import{buildHubspotCompanyPayload} from "../utils/user.Payload.js";
+import{buildHubspotCompanyPayload} from "../utils/All.Payload.js";
 
 
 async function syncCompanies() {
