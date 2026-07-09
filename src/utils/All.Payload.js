@@ -2,7 +2,9 @@
 
 
 function buildHubspotContactPayload(user) {
+    
   return {
+    
     properties: {
         email: user.Email,
         firstname: user.FirstName,
@@ -90,17 +92,29 @@ function buildHubspotTicketPayload(ticket) {
 
 
 function buildHubspotAssetPayload(jitbitAsset) {
+    const depDate = jitbitAsset.Fields.find(
+      (f) => f.FieldName === "Deployment date",
+    )?.Value;
+    const decDate = jitbitAsset.Fields.find(
+      (f) => f.FieldName === "Decommission Date",
+    )?.Value;
   return {
     properties: {
-            model_name: jitbitAsset.ModelName,
-          serial_number: jitbitAsset.SerialNumber,
-          asset_type: jitbitAsset.Type,
-          manufacturer: jitbitAsset.Manufacturer,
-          supplier: jitbitAsset.Supplier,
-          location: jitbitAsset.Location,
-          quantity: jitbitAsset.Quantity.toString(),
-          asset_notes: jitbitAsset.Comments,
+        model_name: jitbitAsset.ModelName || "N/A",
+          serial_number: jitbitAsset.SerialNumber || "N/A",
+          asset_type: jitbitAsset.Type || "N/A",
+          manufacturer: jitbitAsset.Manufacturer || "N/A",
+          supplier: jitbitAsset.Supplier || "N/A",
+          location: jitbitAsset.Location || "N/A",
+          quantity: (jitbitAsset.Quantity || 0).toString(),
+          asset_notes: jitbitAsset.Comments || "",
           jitbit_asset_id: jitbitAsset.ItemID.toString(),
+          jitbit_company_name: jitbitAsset.Company || "N/A",
+          jitbit_company_id: (jitbitAsset.CompanyID || "").toString(),
+          jitbit_type_id: (jitbitAsset.TypeID || 0),
+          jitbit_manufacturer_id: (jitbitAsset.ManufacturerID || 0),
+          jitbit_supplier_id: (jitbitAsset.SupplierID || 0),
+          jitbit_is_disabled: jitbitAsset.Disabled.toString(),
           jitbit_deployment_date: formatHubSpotDate(depDate),
           jitbit_decommission_date: formatHubSpotDate(decDate),
         
