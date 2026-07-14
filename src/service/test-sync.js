@@ -1,313 +1,262 @@
+
+
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
-import axios from "axios";
 import logger from "../utils/logger.js";
 
-// Initialize HubSpot Client
+import {
+  getCompanies,
+  getCompanyDetails,
+  getCompanyCustomFields,
+} from "./jitbit.services.js";
+
+// ==========================================
+// HubSpot Client
+// ==========================================
+
 const hubspotClient = new hubspot.Client({
-  accessToken: process.env.HUBSPOT_ACCESS_TOKEN,
+  accessToken: process.env.HUBSPOT_TOKEN,
 });
 
-// Custom Object ID (Update this to your actual schema ID from HubSpot)
-const ASSET_OBJECT_TYPE_ID = "pYOUR_ASSET_SCHEMA_ID";
+// ==========================================
+// Dynamic Formatting Helpers
+// ==========================================
 
-// Helper: Convert Jitbit date strings to HubSpot's required UNIX timestamp format safely
-const formatHubSpotDate = (dateString) => {
-  if (!dateString) return "";
-  return new Date(dateString).getTime().toString();
+/**
+ * Handles Jitbit labels that do not dynamically convert to exact HubSpot internal names.
+ */
+const PROPERTY_OVERRIDES = {
+  "Engineer Responsible for Billing": "engineer_responsible_billing",
+  "ECI Notes (Pharmacy? Govt Ins no CoF? Etc)": "eci_notes",
+  "EHR is the same as PM": "ehr_is_same_as_pm",
 };
 
-// Asset Data
-const jitbitAsset = {
-  AssignedUsers: [],
-  Fields: [
-    { Value: null, FieldName: "Deployment date", FieldID: 57319 },
-    { Value: null, FieldName: "Decommission Date", FieldID: 57321 },
-  ],
-  ItemID: 973043,
-  Manufacturer: "Apple",
-  Supplier: "TPG",
-  ModelName: "iPad1792",
-  Type: "iPad",
-  SerialNumber: "F9FG9HL9Q1GC",
-  Location: "Englewood",
-  Comments: "N/A",
-  Quantity: 1,
-  Company: "CBSI",
-  CompanyID: 1414826,
-  Disabled: false,
-};
+/**
+ * These properties do not exist in your HubSpot portal.
+ * If you send them, HubSpot will reject the entire payload with a 400 error.
+ */
+const PROPERTIES_TO_IGNORE = [
+  "HubSpot ID",
+  "Uses HiP Kiosks (iPad app)",
+  // Add any future fields here if HubSpot throws a "PROPERTY_DOESNT_EXIST" error
+];
+
+/**
+ * Converts a Jitbit field label into a HubSpot-compatible internal property name.
+ */
+function formatHubSpotProperty(label) {
+  if (!label) return "";
+
+  // 1. Check if we have an explicit override for this label
+  if (PROPERTY_OVERRIDES[label]) {
+    return PROPERTY_OVERRIDES[label];
+  }
+
+  // 2. Otherwise, dynamically generate the snake_case name
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_") // Replace spaces and special characters with underscores
+    .replace(/^_+|_+$/g, ""); // Remove trailing or leading underscores
+}
+
+/**
+ * Cleans up the values coming from Jitbit so HubSpot doesn't reject them.
+ */
+function formatHubSpotValue(hubspotKey, value) {
+  if (value === null || value === undefined) return "";
+
+  let normalizedValue = value.toString().trim();
+
+  // Convert Jitbit checkmarks to a string boolean
+  if (normalizedValue === "✓") {
+    normalizedValue = "true";
+  }
+
+  // Handle specific Picklist formatting rules for HubSpot
+  if (hubspotKey === "cost_estimator") {
+    if (normalizedValue.toLowerCase() === "true") return "Yes";
+    if (normalizedValue.toLowerCase() === "false") return "No";
+  }
+
+  if (
+    hubspotKey === "client_status" &&
+    normalizedValue === "Disabled / Churned"
+  ) {
+    return "Churned";
+  }
+
+  return normalizedValue;
+}
 
 // ==========================================
-// 1. RAW JITBIT DATA PAYLOADS
+// Search Existing Company
 // ==========================================
-const jitbitCompany = {
-  CompanyID: 1517988,
-  Name: "Abacustechnology",
-  Notes: null,
-  EmailDomain: "abacustechnology.com",
-};
 
-const jitbitUser = {
-  UserID: 14442966,
-  Username: " jcrawford@olyderm.com",
-  FullName: "Jenaya Crawford",
-  FirstName: "Jenaya",
-  LastName: "Crawford",
-  Email: "jcrawford@olyderm.com",
-  CompanyId: 1414107,
-  DepartmentID: null,
-  IsAdmin: false,
-  Disabled: false,
-  LastSeen: "2026-05-26T21:22:00Z",
-  CompanyName: "OLYD - Olympic Dermatology",
-  DepartmentName: null,
-  Location: "",
-  Phone: "",
-};
+async function searchCompanyById(companyId) {
+  try {
+    const response = await hubspotClient.crm.companies.searchApi.doSearch({
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: "company_id",
+              operator: "EQ",
+              value: companyId.toString(),
+            },
+          ],
+        },
+      ],
+      properties: ["name", "company_id"],
+    });
 
-const jitbitTicket = {
-  IssueID: 99146385,
-  Priority: 0,
-  StatusID: 2,
-  IssueDate: "2026-05-08T17:26:12.35Z",
-  Subject: "AR - ICC - Discrete Form Build",
-  Status: "In progress",
-  UpdatedByUser: false,
-  UpdatedByPerformer: true,
-  CategoryID: 578943,
-  UserName: "Daniel.Clark@healthipass.com",
-  Technician: "tanya.elmore@healthipass.com",
-  FirstName: "Daniel",
-  LastName: "Clark",
-  DueDate: "2026-07-09T13:26:00Z",
-  TechFirstName: "Tanya",
-  TechLastName: "Elmore",
-  LastUpdated: "2026-07-08T09:46:49.397Z",
-  UpdatedForTechView: false,
-  UserID: 10489123,
-  CompanyID: 1087975,
-  CompanyName: "Health iPASS",
-  AssignedToUserID: 13814395,
-  ResolvedDate: null,
-  SectionID: 145956,
-  Category: "Account Management - Implementations",
-  Origin: "WebApp",
-  Email: "daniel.clark@healthipass.com",
-  StatusColor: "",
-  LastUpdatedByUserID: 5481479,
-  LastUpdatedUsername: "Rambabu",
-  StartDate: null,
-  TimeSpentInSeconds: 2700,
-  AISentiment: 0,
-};
+    return response.results[0] || null;
+  } catch (error) {
+    logger.error(`Company Search Failed: ${error.message}`);
+    return null;
+  }
+}
 
 // ==========================================
-// 2. SYNC FUNCTIONS (Exported)
+// Create Company in HubSpot
+// ==========================================
+
+async function createCompany(company, customFields) {
+  try {
+    // ==============================
+    // Dynamic Custom Field Mapping
+    // ==============================
+
+    const mappedProperties = {};
+
+    customFields.forEach((field) => {
+      // Skip fields that do not exist in HubSpot
+      if (PROPERTIES_TO_IGNORE.includes(field.FieldName)) {
+        return;
+      }
+
+      // Dynamically generate the property name and clean the value
+      const hubspotProperty = formatHubSpotProperty(field.FieldName);
+      const hubspotValue = formatHubSpotValue(hubspotProperty, field.Value);
+
+      mappedProperties[hubspotProperty] = hubspotValue;
+    });
+
+    logger.info("========== DYNAMIC CUSTOM FIELD MAP ==========");
+    logger.info(JSON.stringify(mappedProperties, null, 2));
+
+    // ==============================
+    // HubSpot Payload
+    // ==============================
+
+    const payload = {
+      name: company.Name || "",
+      domain: company.EmailDomain || "",
+      company_id: company.CompanyID?.toString() || "",
+      ...mappedProperties,
+    };
+
+    logger.info("========== HUBSPOT PAYLOAD ==========");
+    logger.info(JSON.stringify(payload, null, 2));
+
+    const response = await hubspotClient.crm.companies.basicApi.create({
+      properties: payload,
+    });
+
+    logger.info(
+      `✅ Company Synced Successfully: ${company.Name} | HubSpot ID: ${response.id}`,
+    );
+
+    return response.id;
+  } catch (error) {
+    logger.error(`❌ Company Sync Failed: ${company.Name}`);
+
+    if (error.response) {
+      logger.error(JSON.stringify(error.response.body, null, 2));
+    } else {
+      logger.error(error.message);
+    }
+
+    return null;
+  }
+}
+
+// ==========================================
+// Sync One Company Testing
 // ==========================================
 
 async function syncCompany() {
   try {
-    const response = await hubspotClient.crm.companies.basicApi.create({
-      properties: {
-        name: jitbitCompany.Name,
-        domain: jitbitCompany.EmailDomain,
-        jitbit_company_id: jitbitCompany.CompanyID.toString(),
-        jitbit_notes: jitbitCompany.Notes || "",
-        jitbit_email_domain: jitbitCompany.EmailDomain || "",
-      },
-    });
-    logger.info(`✅ Company Synced! HubSpot ID: ${response.id}`);
-  } catch (e) {
-    logger.error(`❌ Company Sync Failed: ${e.message}`);
-    if (e.response) logger.error(JSON.stringify(e.response.body, null, 2));
-  }
-}
+    const companies = await getCompanies();
 
-async function syncContact() {
-  try {
-    const response = await hubspotClient.crm.contacts.basicApi.create({
-      properties: {
-        email: jitbitUser.Email,
-        firstname: jitbitUser.FirstName,
-        lastname: jitbitUser.LastName,
-        company: jitbitUser.CompanyName,
-        phone: jitbitUser.Phone || "",
-
-        jitbit_user_id: jitbitUser.UserID.toString(),
-        jitbit_username: jitbitUser.Username.trim(),
-        jitbit_full_name: jitbitUser.FullName,
-        jitbit_company_id: (jitbitUser.CompanyId || "").toString(),
-        jitbit_department_id: (jitbitUser.DepartmentID || "").toString(),
-        jitbit_department_name: jitbitUser.DepartmentName || "",
-        jitbit_is_admin: jitbitUser.IsAdmin.toString(),
-        jitbit_disabled: jitbitUser.Disabled.toString(),
-        jitbit_last_seen: formatHubSpotDate(jitbitUser.LastSeen),
-        jitbit_location: jitbitUser.Location || "",
-      },
-    });
-    logger.info(`✅ Contact Synced! HubSpot ID: ${response.id}`);
-  } catch (e) {
-    logger.error(`❌ Contact Sync Failed: ${e.message}`);
-    if (e.response) logger.error(JSON.stringify(e.response.body, null, 2));
-  }
-}
-
-async function syncTicket() {
-  try {
-    const response = await hubspotClient.crm.tickets.basicApi.create({
-      properties: {
-        subject: jitbitTicket.Subject,
-        createdate: formatHubSpotDate(jitbitTicket.IssueDate),
-        hs_ticket_priority: "LOW",
-        content: `Category: ${jitbitTicket.Category} | Technician: ${jitbitTicket.Technician}`,
-
-        jitbit_issue_id: jitbitTicket.IssueID.toString(),
-        jitbit_status_id: jitbitTicket.StatusID.toString(),
-        jitbit_status: jitbitTicket.Status || "",
-        jitbit_updated_by_user: jitbitTicket.UpdatedByUser.toString(),
-        jitbit_updated_by_performer: jitbitTicket.UpdatedByPerformer.toString(),
-        jitbit_category_id: jitbitTicket.CategoryID.toString(),
-        jitbit_user_name: jitbitTicket.UserName || "",
-        jitbit_technician: jitbitTicket.Technician || "",
-        jitbit_first_name: jitbitTicket.FirstName || "",
-        jitbit_last_name: jitbitTicket.LastName || "",
-        jitbit_due_date: formatHubSpotDate(jitbitTicket.DueDate),
-        jitbit_tech_first_name: jitbitTicket.TechFirstName || "",
-        jitbit_tech_last_name: jitbitTicket.TechLastName || "",
-        jitbit_last_updated: formatHubSpotDate(jitbitTicket.LastUpdated),
-        jitbit_updated_for_tech_view:
-          jitbitTicket.UpdatedForTechView.toString(),
-        jitbit_user_id: jitbitTicket.UserID.toString(),
-        jitbit_company_id: jitbitTicket.CompanyID.toString(),
-        jitbit_company_name: jitbitTicket.CompanyName || "",
-        jitbit_assigned_to_user_id: jitbitTicket.AssignedToUserID.toString(),
-        jitbit_resolved_date: formatHubSpotDate(jitbitTicket.ResolvedDate),
-        jitbit_section_id: jitbitTicket.SectionID.toString(),
-        jitbit_category: jitbitTicket.Category || "",
-        jitbit_origin: jitbitTicket.Origin || "",
-        jitbit_email: jitbitTicket.Email || "",
-        jitbit_status_color: jitbitTicket.StatusColor || "",
-        jitbit_last_updated_by_user_id: (
-          jitbitTicket.LastUpdatedByUserID || ""
-        ).toString(),
-        jitbit_last_updated_username: jitbitTicket.LastUpdatedUsername || "",
-        jitbit_start_date: formatHubSpotDate(jitbitTicket.StartDate),
-        jitbit_time_spent_in_seconds:
-          jitbitTicket.TimeSpentInSeconds.toString(),
-        jitbit_ai_sentiment: jitbitTicket.AISentiment.toString(),
-      },
-    });
-    logger.info(`✅ Ticket Synced! HubSpot ID: ${response.id}`);
-  } catch (e) {
-    logger.error(`❌ Ticket Sync Failed: ${e.message}`);
-    if (e.response) logger.error(JSON.stringify(e.response.body, null, 2));
-  }
-}
-
-// Association Type ID (Aapne verify kar liya hoga, agar "1" hai toh ye sahi hai)
-const ASSOC_TYPE_ID = 1;
-// ADDED: Asset Sync Function
-async function syncAsset() {
-  try {
-    const depDate = jitbitAsset.Fields.find(
-      (f) => f.FieldName === "Deployment date",
-    )?.Value;
-    const decDate = jitbitAsset.Fields.find(
-      (f) => f.FieldName === "Decommission Date",
-    )?.Value;
-
-    const response = await hubspotClient.crm.objects.basicApi.create(
-      ASSET_OBJECT_TYPE_ID,
-      {
-        properties: {
-
-          model_name: jitbitAsset.ModelName || "N/A",
-          serial_number: jitbitAsset.SerialNumber || "N/A",
-          asset_type: jitbitAsset.Type || "N/A",
-          manufacturer: jitbitAsset.Manufacturer || "N/A",
-          supplier: jitbitAsset.Supplier || "N/A",
-          location: jitbitAsset.Location || "N/A",
-          quantity: (jitbitAsset.Quantity || 0).toString(),
-          asset_notes: jitbitAsset.Comments || "",
-          jitbit_asset_id: jitbitAsset.ItemID.toString(),
-          jitbit_company_name: jitbitAsset.Company || "N/A",
-          jitbit_company_id: (jitbitAsset.CompanyID || "").toString(),
-          jitbit_type_id: (jitbitAsset.TypeID || 0),
-          jitbit_manufacturer_id: (jitbitAsset.ManufacturerID || 0),
-          jitbit_supplier_id: (jitbitAsset.SupplierID || 0),
-          jitbit_is_disabled: jitbitAsset.Disabled.toString(),
-          jitbit_deployment_date: formatHubSpotDate(depDate),
-          jitbit_decommission_date: formatHubSpotDate(decDate),
-     
-        },
-      },
-    );
-    logger.info(`✅ Asset Synced! HubSpot ID: ${response.id}`);
-  } catch (e) {
-    logger.error(`❌ Asset Sync Failed: ${e.message}`);
-  }
-}
-
-// 1. Sync Objects
-const hsAssetId = await syncAsset();
-  const hsContactId = await syncContact(); 
-  const hsTicketId = await syncTicket();
-
-  // 2. Perform Associations if IDs exist
-  if (hsAssetId) {
-    const batchInputs = [];
-
-    if (hsContactId) {
-      batchInputs.push({
-        _from: { id: hsAssetId },
-        to: { id: hsContactId },
-        type: { associationCategory: "USER_DEFINED", associationTypeId: ASSOC_TYPE_ID },
-      });
+    if (!companies || companies.length === 0) {
+      logger.info("No companies found.");
+      return;
     }
 
-    if (hsTicketId) {
-      batchInputs.push({
-        _from: { id: hsAssetId },
-        to: { id: hsTicketId },
-        type: { associationCategory: "USER_DEFINED", associationTypeId: ASSOC_TYPE_ID },
-      });
+    // Find Testing Company
+    const company = companies.find((c) => c.CompanyID === 1532588);
+
+    if (!company) {
+      logger.info("Company ID 1532588 not found.");
+      return;
     }
 
-    if (batchInputs.length > 0) {
-      try {
-        await hubspotClient.crm.associations.v4.batchApi.create(
-          ASSET_OBJECT_TYPE_ID, 
-          "batch/create", 
-          { inputs: batchInputs }
-        );
-        logger.info(`🔗 Successfully associated Asset ${hsAssetId} with entities.`);
-      } catch (e) {
-        logger.error(`❌ Association Failed: ${e.message}`);
-      }
+    logger.info(`🚀 Syncing Company: ${company.Name} (${company.CompanyID})`);
+
+    // ==============================
+    // Fetch Complete Company Details
+    // ==============================
+
+    const companyDetails = await getCompanyDetails(company.CompanyID);
+
+    // ==============================
+    // Fetch Custom Fields
+    // ==============================
+
+    const customFields = await getCompanyCustomFields(company.CompanyID);
+
+    // Merge Jitbit Company Data
+    const finalCompany = {
+      ...company,
+      ...companyDetails,
+    };
+
+    logger.info("========== FINAL COMPANY DATA ==========");
+    logger.info(JSON.stringify(finalCompany, null, 2));
+
+    // ==============================
+    // Duplicate Check
+    // ==============================
+
+    const existingCompany = await searchCompanyById(finalCompany.CompanyID);
+
+    if (existingCompany) {
+      logger.info(
+        `⚠️ Company already exists in HubSpot. ID: ${existingCompany.id}`,
+      );
+      return;
     }
+
+    await createCompany(finalCompany, customFields);
+
+    logger.info("✅ Test Company Sync Completed.");
+  } catch (error) {
+    logger.error(`❌ Sync Failed: ${error.message}`);
   }
-  
-
-
+}
 
 // ==========================================
-// 3. EXECUTION (Self-invoking if run directly)
+// Run
 // ==========================================
 
 async function runSync() {
-  logger.info("Starting Jitbit -> HubSpot Sync Test...");
+  logger.info("🚀 Starting Jitbit → HubSpot Company Sync...");
+
   await syncCompany();
-  await syncContact();
-  await syncTicket();
-//   await syncAsset(); // Added
-  logger.info("Sync Test Complete.");
+
+  logger.info("🎉 Process Finished.");
 }
 
-// Only run this automatically if the file is executed directly
-// (Useful for testing without breaking imports in other files)
-if (process.argv[1] && process.argv[1].endsWith("test-sync.js")) {
-  runSync();
-}
+runSync();
 
-export { syncCompany, syncContact, syncTicket, runSync, syncAsset };
+export { syncCompany, runSync };

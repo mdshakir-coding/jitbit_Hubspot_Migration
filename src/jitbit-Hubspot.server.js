@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 3800;
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
 
-  syncUsers();
-  // syncCompanies();
+  // syncUsers();
+  syncCompanies();
   // syncTickets();
 
   
