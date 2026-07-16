@@ -194,7 +194,7 @@ async function syncCompany() {
     }
 
     // Find Testing Company
-    const company = companies.find((c) => c.CompanyID === 1532588);
+    const company = companies.find((c) => c.CompanyID === 1414826);
 
     if (!company) {
       logger.info("Company ID 1532588 not found.");
@@ -260,3 +260,5 @@ async function runSync() {
 runSync();
 
 export { syncCompany, runSync };
+
+

@@ -1,5 +1,6 @@
 import axios from "axios";
 import logger from "../utils/logger.js";
+import "dotenv/config";
 
 const getCompanies = async () => {
   try {
@@ -111,12 +112,11 @@ async function searchCompanyById(companyId) {
   }
 }
 
-
 // ==========================================
 // Fetch Jitbit Company Custom Fields
 // ==========================================
 
- async function getCompanyCustomFields(companyId) {
+async function getCompanyCustomFields(companyId) {
   try {
     const response = await axios.get(
       `${process.env.JITBIT_URL}/api/CompanyCustomFields?id=${companyId}`,
@@ -142,46 +142,137 @@ async function searchCompanyById(companyId) {
 // Fetch Jitbit Company Details
 // ==========================================
 
- async function getCompanyDetails(companyId) {
-
+async function getCompanyDetails(companyId) {
   try {
-
     const response = await axios.get(
       `${process.env.JITBIT_URL}/api/Companies/${companyId}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.JITBIT_API_KEY}`,
         },
+      },
+    );
+
+    logger.info(`Successfully fetched company details: ${companyId}`);
+
+    return response.data || {};
+  } catch (error) {
+    logger.error(`Failed to fetch company details: ${companyId}`);
+
+    logger.error(error.response?.data || error.message);
+
+    return {};
+  }
+}
+
+
+
+
+// Headers ko bahar define karein taaki sabhi functions use kar sakein
+const headers = { 
+  "Authorization": `Bearer ${process.env.JITBIT_API_KEY}`,
+  "Content-Type": "application/json"
+};
+
+
+async function getTicketDetails(ticketId) {
+  try {
+    const response = await axios.get(`${process.env.JITBIT_URL}/api/Tickets/${ticketId}`, {
+      headers
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error fetching ticket details:`, error.message);
+    return {};
+  }
+}
+
+
+
+async function getTicketCustomFields(IssueID) {
+  try {
+    const response = await axios.get(`https://healthipass.jitbit.com/api/TicketCustomFields`, {
+      params: { id: IssueID },
+      headers: {
+        'Authorization': `Bearer ${process.env.JITBIT_API_KEY}`,
+        'Accept-Encoding': 'gzip'
+
+      }
+    });
+
+    return response.data; 
+  } catch (error) {
+    console.error(`❌ Error fetching custom fields for ${IssueID}:`, error.message);
+    return [];
+  }
+}
+
+
+const getAssets = async () => {
+  try {
+    logger.info("Fetching assets from Jitbit...");
+
+    const response = await axios.get(
+      "https://healthipass.jitbit.com/helpdesk/api/Assets",
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.JITBIT_API_KEY}`,
+          Accept: "application/json",
+        },
+      },
+    );
+
+    logger.info(`Successfully fetched ${response.data?.length || 0} assets.`);
+    return response.data;
+  } catch (error) {
+    logger.error(
+      `Failed to fetch assets: ${
+        error.response?.data
+          ? JSON.stringify(error.response.data)
+          : error.message
+      }`,
+    );
+    throw error;
+  }
+};
+
+// ==========================================
+// Fetch Jitbit Company By ID
+// ==========================================
+
+const getCompanyById = async (companyId) => {
+  try {
+    logger.info(`Fetching Jitbit company: ${companyId}`);
+
+    const response = await axios.get(
+      `${process.env.JITBIT_URL}/helpdesk/api/Companies/${companyId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.JITBIT_API_KEY}`,
+          Accept: "application/json",
+        },
       }
     );
 
-
     logger.info(
-      `Successfully fetched company details: ${companyId}`
+      `Successfully fetched Jitbit company: ${companyId}`
     );
 
+    return response.data || null;
 
-    return response.data || {};
-
-
-  } catch(error) {
-
+  } catch (error) {
 
     logger.error(
-      `Failed to fetch company details: ${companyId}`
+      `Failed to fetch Jitbit company ${companyId}: ${
+        error.response?.data
+          ? JSON.stringify(error.response.data)
+          : error.message
+      }`
     );
 
-
-    logger.error(
-      error.response?.data || error.message
-    );
-
-
-    return {};
-
+    return null;
   }
-
-}
+};
 
 export {
   getCompanies,
@@ -190,4 +281,8 @@ export {
   searchCompanyById,
   getCompanyCustomFields,
   getCompanyDetails,
+  getTicketDetails,
+  getTicketCustomFields,
+  getAssets,
+  getCompanyById
 };
