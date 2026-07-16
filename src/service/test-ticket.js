@@ -1,5 +1,3 @@
-
-
 // import "dotenv/config";
 // import * as hubspot from "@hubspot/api-client";
 // import logger from "../utils/logger.js";
@@ -13,11 +11,11 @@
 // // SAARI MAPPINGS PURI TARAH MENTAINED HAIN
 // // ==========================================
 // // const VALID_HUBSPOT_PROPERTIES = [
-// //   "subject", "content", "hs_pipeline", "hs_pipeline_stage", "hs_ticket_priority", 
-// //   "hs_ticket_category", "account_manager", "affected_component", "billing_manager", 
-// //   "branding", "churn_notes", "churn_reason", "churn_risk", "client_feedback_details", 
-// //   "client_satisfaction_rating", "collateral_specifications", "config_location", 
-// //   "content___messaging", "deliverables_requested", "go_live_date", "hs_resolution", 
+// //   "subject", "content", "hs_pipeline", "hs_pipeline_stage", "hs_ticket_priority",
+// //   "hs_ticket_category", "account_manager", "affected_component", "billing_manager",
+// //   "branding", "churn_notes", "churn_reason", "churn_risk", "client_feedback_details",
+// //   "client_satisfaction_rating", "collateral_specifications", "config_location",
+// //   "content___messaging", "deliverables_requested", "go_live_date", "hs_resolution",
 // //   "impact", "name_of_configs_changed", "nps_follow_up_answer", "nps_score"
 // // ];
 
@@ -120,7 +118,7 @@
 // //         logger.info(`🔗 Associated Contact: ${contactSearch.results[0].id}`);
 // //       }
 // //     }
-    
+
 // //     // Association by Company Name
 // //     if (ticket.CompanyName) {
 // //       const companySearch = await hubspotClient.crm.companies.searchApi.doSearch({
@@ -143,7 +141,7 @@
 // // async function runSync() {
 // //   const tickets = await getTickets();
 // //   const targetTicket = tickets.find(t => t.IssueID === 101649335);
-  
+
 // //   if (targetTicket) {
 // //     logger.info(`🚀 Processing Target Ticket ID: ${targetTicket.IssueID}`);
 // //     await createTicket(targetTicket);
@@ -154,9 +152,6 @@
 // // }
 
 // // runSync();
-
-
-
 
 // // import "dotenv/config";
 // // import * as hubspot from "@hubspot/api-client";
@@ -179,18 +174,18 @@
 // // // Mappings & Constants
 // // // ==========================================
 // // const VALID_HUBSPOT_PROPERTIES = [
-// //   "subject", "content", "hs_pipeline", "hs_pipeline_stage", "hs_ticket_priority", 
-// //   "hs_ticket_category", "account_manager", "affected_component", "billing_manager", 
-// //   "branding", "churn_notes", "churn_reason", "churn_risk", "client_feedback_details", 
-// //   "client_satisfaction_rating", "collateral_specifications", "config_location", 
-// //   "content___messaging", "deliverables_requested", "go_live_date", "hs_resolution", 
+// //   "subject", "content", "hs_pipeline", "hs_pipeline_stage", "hs_ticket_priority",
+// //   "hs_ticket_category", "account_manager", "affected_component", "billing_manager",
+// //   "branding", "churn_notes", "churn_reason", "churn_risk", "client_feedback_details",
+// //   "client_satisfaction_rating", "collateral_specifications", "config_location",
+// //   "content___messaging", "deliverables_requested", "go_live_date", "hs_resolution",
 // //   "impact", "name_of_configs_changed", "nps_follow_up_answer", "nps_score", "issue_id"
 // // ];
 
 // // const PROPERTY_OVERRIDES = {
-// //   "Subject": "subject", 
-// //   "Body": "content", 
-// //   "Category": "hs_ticket_category", 
+// //   "Subject": "subject",
+// //   "Body": "content",
+// //   "Category": "hs_ticket_category",
 // //   "Priority": "hs_ticket_priority",
 // //   "IssueID": "issue_id"
 // // };
@@ -347,7 +342,7 @@
 // //         logger.info(`🔗 Associated Contact: ${contactSearch.results[0].id}`);
 // //       }
 // //     }
-    
+
 // //     if (ticket.CompanyName) {
 // //       const companySearch = await hubspotClient.crm.companies.searchApi.doSearch({
 // //         filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: ticket.CompanyName }] }]
@@ -397,7 +392,7 @@
 // //     // ==============================
 // //     // Fetch Details & Custom Fields by IssueID
 // //     // ==============================
-    
+
 // //     // Assuming getTicketDetails and getTicketCustomFields exist in jitbit.services.js
 // //     const ticketDetails = await getTicketDetails(ticket.IssueID);
 // //     const customFields = await getTicketCustomFields(ticket.IssueID);
@@ -441,22 +436,16 @@
 
 // // export { syncTicket, runSync };
 
-
-
-
-
 // // ==========================================
-// // 1. Transform Ticket 
+// // 1. Transform Ticket
 // // Converts Jitbit JSON + Custom Fields into HubSpot Payload
 // // ==========================================
 // // function transformTicket(ticketRecord, customFields) {
-// //   const mappedProperties = { 
-// //     hs_pipeline: "0", 
-// //     hs_pipeline_stage: "1", 
-// //     issue_id: ticketRecord.IssueID.toString() 
+// //   const mappedProperties = {
+// //     hs_pipeline: "0",
+// //     hs_pipeline_stage: "1",
+// //     issue_id: ticketRecord.IssueID.toString()
 // //   };
-
-
 
 // //   return mappedProperties;
 // // }
@@ -540,7 +529,6 @@
 //     "go_live_date",
 //     "third_party_ticket_creation_date",
 //   ]);
-
 
 //   const ENUM_OPTIONS = {
 //     affected_component: [
@@ -639,9 +627,8 @@
 //       "TrustCommerce / Sphere","Twilio","Veradigm/Allscripts","Visit Pay",
 //       "WorldPay / Vantiv","xBridge","Zinniax",
 //     ],
-  
-//   };
 
+//   };
 
 //   const PASSTHROUGH_ENUM_PROPERTIES = new Set(["practice"]);
 
@@ -654,7 +641,6 @@
 //   const slugify = (s) =>
 //     String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 
- 
 //   const resolveEnumValue = (hsProperty, rawValue) => {
 //     if (SLUGIFIED_ENUM_PROPERTIES.has(hsProperty)) {
 //       const slug = slugify(rawValue);
@@ -677,7 +663,6 @@
 //     if (!isoString) return null;
 //     return `${isoString.split("T")[0]}T00:00:00.000Z`;
 //   };
-
 
 //   const mappedProperties = {
 //     hs_pipeline: "0",
@@ -739,7 +724,7 @@
 // }
 
 // // ==========================================
-// // 2. Create Ticket 
+// // 2. Create Ticket
 // // Pushes the payload to HubSpot and links Contact/Company
 // // ==========================================
 // async function createTicket(hubspotPayload, email, companyName) {
@@ -761,7 +746,7 @@
 //         logger.info(`🔗 Associated Contact: ${contactSearch.results[0].id}`);
 //       }
 //     }
-    
+
 //     // Associate Company by Name
 //     if (companyName) {
 //       const companySearch = await hubspotClient.crm.companies.searchApi.doSearch({
@@ -783,7 +768,7 @@
 // }
 
 // // ==========================================
-// // 3. Sync Single Ticket 
+// // 3. Sync Single Ticket
 // // Orchestrates the entire flow for one record
 // // ==========================================
 // async function syncSingleTicket(ticketRecord) {
@@ -794,8 +779,6 @@
 
 //   const issueId = ticketRecord.IssueID;
 //   logger.info(`🚀 Syncing Ticket ID: ${issueId}`);
-
-
 
 //   // 2. Fetch Custom Fields
 //   let customFields = [];
@@ -813,9 +796,6 @@
 //   await createTicket(hubspotPayload, ticketRecord.Email, ticketRecord.CompanyName);
 //   logger.info(`✅ Sync Completed for Ticket ID: ${issueId}`);
 // }
-
-
-
 
 // syncSingleTicket({
 //         "IssueID": 101649335,
@@ -853,18 +833,7 @@
 //         "AISentiment": 0
 //     })
 
-
-
-
-
-
-
-
-
-
-
 // New code add Pipeline............................................
-
 
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
@@ -880,8 +849,6 @@ import {
   getTicketDetails,
   getTicketCustomFields,
 } from "./jitbit.services.js";
-
-
 
 // ==========================================
 // HUBSPOT PIPELINES (Total: 7)
@@ -953,11 +920,6 @@ const HUBSPOT_STAGES = {
   },
 };
 
-
-
-
-
-
 //   return mappedProperties;
 // }
 
@@ -995,11 +957,16 @@ function flattenCustomFields(customFields) {
  *                    HubSpot CRM ticket create/update call
  */
 function transformTicket(ticketRecord, customFields) {
-  console.log("Ticket Record:", ticketRecord);
-  console.log("Custom Fields:", customFields);
+  // console.log("Ticket Record:", ticketRecord);
+  // console.log("Custom Fields:", customFields);
   const flatCustomFields = flattenCustomFields(customFields);
 
-  const PRIORITY_MAP = { 0: "LOW", 1: "MEDIUM", 2: "HIGH", 3: "URGENT" };
+ const PRIORITY_MAP = {
+    "-1": "LOW",
+    "0": "MEDIUM",
+    "1": "HIGH",
+    "2": "URGENT"
+};
 
   const ORIGIN_MAP = {
     Email: "EMAIL",
@@ -1009,10 +976,10 @@ function transformTicket(ticketRecord, customFields) {
   };
 
   const CUSTOM_FIELD_MAP = {
-    "Partner": "partner",
-    "Urgency": "urgency",
-    "Impact": "impact",
-    "Practice": "practice",
+    Partner: "partner",
+    Urgency: "urgency",
+    Impact: "impact",
+    Practice: "practice",
     "PM/EHR": "pm_ehr",
     "Account Manager": "account_manager",
     "Billing Manager": "billing_manager",
@@ -1024,12 +991,14 @@ function transformTicket(ticketRecord, customFields) {
     "Resolution Summary": "resolution_summary",
     "Why was that the resolution?": "why_was_that_the_resolution",
     "Config Location": "config_location",
-    "Name of Config(s) Changed (separate with semicolon)": "name_of_configs_changed",
+    "Name of Config(s) Changed (separate with semicolon)":
+      "name_of_configs_changed",
     "VoC Status": "voc_status",
     "VoC URL": "voc_url",
     "VoC Added to Ideas Board?": "voc_added_to_ideas_board",
     "3rd Party": "third_party",
-    "3rd Party Ticket URL / Ticket Number": "third_party_ticket_url_ticket_number",
+    "3rd Party Ticket URL / Ticket Number":
+      "third_party_ticket_url_ticket_number",
     "3rd Party Ticket Creation Date": "third_party_ticket_creation_date",
     "Client Satisfaction Rating": "client_satisfaction_rating",
     "Client Feedback Details": "client_feedback_details",
@@ -1041,56 +1010,119 @@ function transformTicket(ticketRecord, customFields) {
     "third_party_ticket_creation_date",
   ]);
 
-
   const ENUM_OPTIONS = {
     affected_component: [
-      "3rd_party","api_incorrect_balance_pulled","api_interface_bridge_down",
-      "api_interface_bridge_incorrect_data","api_misc_write_back_issue",
-      "appt_reminders_cadence_change","appt_reminders_other",
-      "appt_reminders_verbiage_change","appt_reminders_wrong_time_not_sent",
-      "appts_add_in","appts_encounter_creation","appts_incorrect_data_in_hip",
-      "appts_not_enough_not_adding","appts_status_write_back",
-      "appts_too_many_not_cancelling","billing_config_change",
-      "billing_generation_issue","billing_generation_request",
-      "billing_incorrect_balance","billing_notifications_issue",
-      "billing_paper_statements","billing_payment_plans",
-      "config_change_add_appt_type_to_hip","config_change_add_location_to_hip",
-      "config_change_add_provider_to_hip","config_change_platform_misc_settings",
-      "demographics_config_change","demographics_posting",
-      "demographics_pulling_data","documentation_implementations",
-      "documentation_product_feature","documentation_support_troubleshooting",
-      "eci_cant_complete_check_in","eci_config_change","eci_incorrect_information",
-      "eci_telehealth_config","eci_virtual_kiosk","feedback","forms_creation",
-      "forms_kill_re_queue","forms_modification_to_form","forms_not_sent",
-      "forms_other_issue","forms_posting_issue","forms_rules_change",
-      "hardware_kiosk_orders","hardware_kiosk_troubleshooting",
-      "hardware_pax_orders","hardware_pax_troubleshooting","health_ipass_app",
-      "hip_cant_login","hip_payment_contract_changes",
-      "implementation_2_way_sms_confirm_req","implementation_bridge_certification",
-      "implementation_bridge_setup","implementation_number_hosting_request",
-      "implementation_number_purchase_request","implementation_payer_mapping",
-      "insurance_co_pay_value","insurance_cost_estimator",
-      "insurance_eligibility_status_return","insurance_payer_mapping_update",
-      "insurance_posting_issue","insurance_rate_card_change",
-      "insurance_rate_card_setup","insurance_smart_deposit",
-      "internal_support_account_issue","internal_support_account_setup",
-      "internal_support_hardware","internal_support_mfa_issue",
-      "internal_support_software","jitbit_automations","jitbit_client_setup",
-      "messaging_bulk_messaging_problem","messaging_bulk_messaging_request",
-      "messaging_email_template_change","messaging_in_clinic_message",
-      "offboarding","parent_ticket","patient_financing","patient_opened_ticket",
-      "patient_portal_incorrect_info","patient_portal_login_or_auth_fail",
-      "patient_portal_patient_wallet","patient_self_scheduling",
-      "payments_config_change","payments_modification","payments_posting",
-      "payments_processing","q_a","reports_custom_generation_request",
-      "reports_generation_error","reports_incorrect_data","sales_demo_build",
-      "sales_demo_config_update","sftp","sphere_credential_issues","training",
-      "user_interface_admin_ui","user_interface_check_in",
-      "user_interface_dashboard","user_interface_other_patient_ui",
-      "user_interface_patient_eci","user_interface_patient_portal",
-      "user_interface_patient360","user_interface_reports",
-      "users_enable_disable_sso","users_new_modify_user","users_password_reset",
-      "users_unable_to_sign_in","voc",
+      "3rd_party",
+      "api_incorrect_balance_pulled",
+      "api_interface_bridge_down",
+      "api_interface_bridge_incorrect_data",
+      "api_misc_write_back_issue",
+      "appt_reminders_cadence_change",
+      "appt_reminders_other",
+      "appt_reminders_verbiage_change",
+      "appt_reminders_wrong_time_not_sent",
+      "appts_add_in",
+      "appts_encounter_creation",
+      "appts_incorrect_data_in_hip",
+      "appts_not_enough_not_adding",
+      "appts_status_write_back",
+      "appts_too_many_not_cancelling",
+      "billing_config_change",
+      "billing_generation_issue",
+      "billing_generation_request",
+      "billing_incorrect_balance",
+      "billing_notifications_issue",
+      "billing_paper_statements",
+      "billing_payment_plans",
+      "config_change_add_appt_type_to_hip",
+      "config_change_add_location_to_hip",
+      "config_change_add_provider_to_hip",
+      "config_change_platform_misc_settings",
+      "demographics_config_change",
+      "demographics_posting",
+      "demographics_pulling_data",
+      "documentation_implementations",
+      "documentation_product_feature",
+      "documentation_support_troubleshooting",
+      "eci_cant_complete_check_in",
+      "eci_config_change",
+      "eci_incorrect_information",
+      "eci_telehealth_config",
+      "eci_virtual_kiosk",
+      "feedback",
+      "forms_creation",
+      "forms_kill_re_queue",
+      "forms_modification_to_form",
+      "forms_not_sent",
+      "forms_other_issue",
+      "forms_posting_issue",
+      "forms_rules_change",
+      "hardware_kiosk_orders",
+      "hardware_kiosk_troubleshooting",
+      "hardware_pax_orders",
+      "hardware_pax_troubleshooting",
+      "health_ipass_app",
+      "hip_cant_login",
+      "hip_payment_contract_changes",
+      "implementation_2_way_sms_confirm_req",
+      "implementation_bridge_certification",
+      "implementation_bridge_setup",
+      "implementation_number_hosting_request",
+      "implementation_number_purchase_request",
+      "implementation_payer_mapping",
+      "insurance_co_pay_value",
+      "insurance_cost_estimator",
+      "insurance_eligibility_status_return",
+      "insurance_payer_mapping_update",
+      "insurance_posting_issue",
+      "insurance_rate_card_change",
+      "insurance_rate_card_setup",
+      "insurance_smart_deposit",
+      "internal_support_account_issue",
+      "internal_support_account_setup",
+      "internal_support_hardware",
+      "internal_support_mfa_issue",
+      "internal_support_software",
+      "jitbit_automations",
+      "jitbit_client_setup",
+      "messaging_bulk_messaging_problem",
+      "messaging_bulk_messaging_request",
+      "messaging_email_template_change",
+      "messaging_in_clinic_message",
+      "offboarding",
+      "parent_ticket",
+      "patient_financing",
+      "patient_opened_ticket",
+      "patient_portal_incorrect_info",
+      "patient_portal_login_or_auth_fail",
+      "patient_portal_patient_wallet",
+      "patient_self_scheduling",
+      "payments_config_change",
+      "payments_modification",
+      "payments_posting",
+      "payments_processing",
+      "q_a",
+      "reports_custom_generation_request",
+      "reports_generation_error",
+      "reports_incorrect_data",
+      "sales_demo_build",
+      "sales_demo_config_update",
+      "sftp",
+      "sphere_credential_issues",
+      "training",
+      "user_interface_admin_ui",
+      "user_interface_check_in",
+      "user_interface_dashboard",
+      "user_interface_other_patient_ui",
+      "user_interface_patient_eci",
+      "user_interface_patient_portal",
+      "user_interface_patient360",
+      "user_interface_reports",
+      "users_enable_disable_sso",
+      "users_new_modify_user",
+      "users_password_reset",
+      "users_unable_to_sign_in",
+      "voc",
     ],
     urgency: [
       "1 High - inability to perform work",
@@ -1104,44 +1136,126 @@ function transformTicket(ticketRecord, customFields) {
     ],
     voc_added_to_ideas_board: ["N/A", "NO", "YES"],
     voc_status: [
-      "Accepted","Completed","Denied","In Progress","In Review",
-      "None or N/A","Submitted","VoC Priority",
+      "Accepted",
+      "Completed",
+      "Denied",
+      "In Progress",
+      "In Review",
+      "None or N/A",
+      "Submitted",
+      "VoC Priority",
     ],
     root_cause: [
-      "3rd Party","API Testing","Bill Balance Incorrect","Bill Generation Failure",
-      "Bill Generation Request","Bug","Client Training","Code change (Use case gap)",
-      "Config Update Requested","Documentation","Form Creation / Edit",
-      "Form Posting Failure / Other Form Issue","HiP Proactive Communication",
-      "HiP SaaS Contract","HiP Training","HW Failure","HW Request",
-      "Internal Request","Jitbit Change or Addition","Kill & Re-queue",
-      "Misconfiguration","Onboarding","Operations","Patient Mistake",
-      "Patient Ticket","Practice Mistake/Oversight","Q/A","Timeout",
-      "Unknown at this time","VoC",
+      "3rd Party",
+      "API Testing",
+      "Bill Balance Incorrect",
+      "Bill Generation Failure",
+      "Bill Generation Request",
+      "Bug",
+      "Client Training",
+      "Code change (Use case gap)",
+      "Config Update Requested",
+      "Documentation",
+      "Form Creation / Edit",
+      "Form Posting Failure / Other Form Issue",
+      "HiP Proactive Communication",
+      "HiP SaaS Contract",
+      "HiP Training",
+      "HW Failure",
+      "HW Request",
+      "Internal Request",
+      "Jitbit Change or Addition",
+      "Kill & Re-queue",
+      "Misconfiguration",
+      "Onboarding",
+      "Operations",
+      "Patient Mistake",
+      "Patient Ticket",
+      "Practice Mistake/Oversight",
+      "Q/A",
+      "Timeout",
+      "Unknown at this time",
+      "VoC",
     ],
     resolution_code: [
-      "3rd Party Fix","API Testing","Bug fix","CANT Be Resolved / No Resolution",
-      "Client Resolved Issue","Client Training","Config Change","Database Edit",
-      "Documentation","Executed New Agreement","Form Creation / Edit",
-      "Form Q/A & Validation","Full Appt Load","HiP Training","Hotfix","HW Fix",
-      "HW Net New","HW Replacement","HW Return","Jitbit Change or Addition",
-      "Kill & Re-queue","Number Purchased","Offboarding","Onboarding",
-      "Operations","Parent Ticket","Patient Ticket","Payer Mapping",
-      "Postman Data Pull","Practice Mistake","Question / Concern Answered",
-      "Retry w/o Changes","Spam / Vendor Email","Use case gap (New Code)",
-      "User Creation / Edit / PW Reset","VoC",
+      "3rd Party Fix",
+      "API Testing",
+      "Bug fix",
+      "CANT Be Resolved / No Resolution",
+      "Client Resolved Issue",
+      "Client Training",
+      "Config Change",
+      "Database Edit",
+      "Documentation",
+      "Executed New Agreement",
+      "Form Creation / Edit",
+      "Form Q/A & Validation",
+      "Full Appt Load",
+      "HiP Training",
+      "Hotfix",
+      "HW Fix",
+      "HW Net New",
+      "HW Replacement",
+      "HW Return",
+      "Jitbit Change or Addition",
+      "Kill & Re-queue",
+      "Number Purchased",
+      "Offboarding",
+      "Onboarding",
+      "Operations",
+      "Parent Ticket",
+      "Patient Ticket",
+      "Payer Mapping",
+      "Postman Data Pull",
+      "Practice Mistake",
+      "Question / Concern Answered",
+      "Retry w/o Changes",
+      "Spam / Vendor Email",
+      "Use case gap (New Code)",
+      "User Creation / Edit / PW Reset",
+      "VoC",
     ],
     third_party: [
-      "Amazon Web Services","Artera","Athena","CTS","eCW","Ellkay","ERO",
-      "Exscribe","Formstack","Google","GreenWay","HealthTalk AI","Instamed",
-      "Issuing Bank","Klara","Linux VPN","MedEvolve","ModMed","MotionMD","N/A",
-      "Nextech","NextGen","POS","Practice / Client","PrognoCIS","Relatient",
-      "Rippling","Sendgrid","Soti MobiControl","Televox","TransUnion/FinThrive",
-      "TrustCommerce / Sphere","Twilio","Veradigm/Allscripts","Visit Pay",
-      "WorldPay / Vantiv","xBridge","Zinniax",
+      "Amazon Web Services",
+      "Artera",
+      "Athena",
+      "CTS",
+      "eCW",
+      "Ellkay",
+      "ERO",
+      "Exscribe",
+      "Formstack",
+      "Google",
+      "GreenWay",
+      "HealthTalk AI",
+      "Instamed",
+      "Issuing Bank",
+      "Klara",
+      "Linux VPN",
+      "MedEvolve",
+      "ModMed",
+      "MotionMD",
+      "N/A",
+      "Nextech",
+      "NextGen",
+      "POS",
+      "Practice / Client",
+      "PrognoCIS",
+      "Relatient",
+      "Rippling",
+      "Sendgrid",
+      "Soti MobiControl",
+      "Televox",
+      "TransUnion/FinThrive",
+      "TrustCommerce / Sphere",
+      "Twilio",
+      "Veradigm/Allscripts",
+      "Visit Pay",
+      "WorldPay / Vantiv",
+      "xBridge",
+      "Zinniax",
     ],
-  
   };
-
 
   const PASSTHROUGH_ENUM_PROPERTIES = new Set(["practice"]);
 
@@ -1149,12 +1263,19 @@ function transformTicket(ticketRecord, customFields) {
   const SLUGIFIED_ENUM_PROPERTIES = new Set(["affected_component"]);
 
   const normalize = (s) =>
-    String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    String(s)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
 
   const slugify = (s) =>
-    String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    String(s)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
 
- 
   const resolveEnumValue = (hsProperty, rawValue) => {
     if (SLUGIFIED_ENUM_PROPERTIES.has(hsProperty)) {
       const slug = slugify(rawValue);
@@ -1190,7 +1311,10 @@ function transformTicket(ticketRecord, customFields) {
     targetStage = HUBSPOT_STAGES.EXTERNAL_SUPPORT.NEW;
   }
   // Route implementations
-  else if (ticketRecord.Category && ticketRecord.Category.includes("Implementation")) {
+  else if (
+    ticketRecord.Category &&
+    ticketRecord.Category.includes("Implementation")
+  ) {
     targetPipeline = HUBSPOT_PIPELINES.IMPLEMENTATION_SUPPORT;
     targetStage = HUBSPOT_STAGES.IMPLEMENTATION_SUPPORT.NEW;
   }
@@ -1209,9 +1333,16 @@ function transformTicket(ticketRecord, customFields) {
   if (ticketRecord.ResolvedDate) {
     mappedProperties.closed_date = ticketRecord.ResolvedDate;
   }
-  if (ticketRecord.Priority !== undefined && PRIORITY_MAP[ticketRecord.Priority]) {
+  // if (ticketRecord.Priority !== undefined && PRIORITY_MAP[ticketRecord.Priority]) {
+  //   mappedProperties.hs_ticket_priority = PRIORITY_MAP[ticketRecord.Priority];
+  // }
+ if (
+    ticketRecord.Priority !== undefined &&
+    PRIORITY_MAP.hasOwnProperty(ticketRecord.Priority)
+) {
     mappedProperties.hs_ticket_priority = PRIORITY_MAP[ticketRecord.Priority];
-  }
+}
+
   if (ticketRecord.Origin && ORIGIN_MAP[ticketRecord.Origin]) {
     mappedProperties.source_type = ORIGIN_MAP[ticketRecord.Origin];
   }
@@ -1247,7 +1378,7 @@ function transformTicket(ticketRecord, customFields) {
   if (skippedFields.length) {
     console.warn(
       `⚠️ Skipped ${skippedFields.length} unmatched enum value(s) for ticket ${ticketRecord.IssueID}:`,
-      skippedFields
+      skippedFields,
     );
   }
 
@@ -1255,38 +1386,67 @@ function transformTicket(ticketRecord, customFields) {
 }
 
 // ==========================================
-// 2. Create Ticket 
+// 2. Create Ticket
 // Pushes the payload to HubSpot and links Contact/Company
 // ==========================================
 async function createTicket(hubspotPayload, email, companyName) {
   try {
     // Create Ticket
-    const response = await hubspotClient.crm.tickets.basicApi.create({ properties: hubspotPayload });
+    const response = await hubspotClient.crm.tickets.basicApi.create({
+      properties: hubspotPayload,
+    });
     const ticketId = response.id;
     logger.info(`✅ Ticket Created | HubSpot ID: ${ticketId}`);
 
     // Associate Contact by Email
     if (email) {
-      const contactSearch = await hubspotClient.crm.contacts.searchApi.doSearch({
-        filterGroups: [{ filters: [{ propertyName: "email", operator: "EQ", value: email }] }]
-      });
+      const contactSearch = await hubspotClient.crm.contacts.searchApi.doSearch(
+        {
+          filterGroups: [
+            {
+              filters: [
+                { propertyName: "email", operator: "EQ", value: email },
+              ],
+            },
+          ],
+        },
+      );
       if (contactSearch.results.length > 0) {
-        await hubspotClient.crm.associations.v4.basicApi.create("tickets", ticketId, "contacts", contactSearch.results[0].id, [
-          { associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 } // Ticket to Contact
-        ]);
+        await hubspotClient.crm.associations.v4.basicApi.create(
+          "tickets",
+          ticketId,
+          "contacts",
+          contactSearch.results[0].id,
+          [
+            { associationCategory: "HUBSPOT_DEFINED", associationTypeId: 16 }, // Ticket to Contact
+          ],
+        );
         logger.info(`🔗 Associated Contact: ${contactSearch.results[0].id}`);
       }
     }
-    
+
     // Associate Company by Name
     if (companyName) {
-      const companySearch = await hubspotClient.crm.companies.searchApi.doSearch({
-        filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: companyName }] }]
-      });
+      const companySearch =
+        await hubspotClient.crm.companies.searchApi.doSearch({
+          filterGroups: [
+            {
+              filters: [
+                { propertyName: "name", operator: "EQ", value: companyName },
+              ],
+            },
+          ],
+        });
       if (companySearch.results.length > 0) {
-        await hubspotClient.crm.associations.v4.basicApi.create("tickets", ticketId, "companies", companySearch.results[0].id, [
-          { associationCategory: "HUBSPOT_DEFINED", associationTypeId: 26 } // Ticket to Company
-        ]);
+        await hubspotClient.crm.associations.v4.basicApi.create(
+          "tickets",
+          ticketId,
+          "companies",
+          companySearch.results[0].id,
+          [
+            { associationCategory: "HUBSPOT_DEFINED", associationTypeId: 26 }, // Ticket to Company
+          ],
+        );
         logger.info(`🔗 Associated Company: ${companySearch.results[0].id}`);
       }
     }
@@ -1299,7 +1459,7 @@ async function createTicket(hubspotPayload, email, companyName) {
 }
 
 // ==========================================
-// 3. Sync Single Ticket 
+// 3. Sync Single Ticket
 // Orchestrates the entire flow for one record
 // ==========================================
 async function syncSingleTicket(ticketRecord) {
@@ -1311,8 +1471,6 @@ async function syncSingleTicket(ticketRecord) {
   const issueId = ticketRecord.IssueID;
   logger.info(`🚀 Syncing Ticket ID: ${issueId}`);
 
-
-
   // 2. Fetch Custom Fields
   let customFields = [];
   try {
@@ -1323,48 +1481,51 @@ async function syncSingleTicket(ticketRecord) {
 
   // 3. Transform Data
   const hubspotPayload = transformTicket(ticketRecord, customFields);
-  logger.info(`========== HUBSPOT PAYLOAD ==========\n  ${JSON.stringify(hubspotPayload, null, 2)}`);
+  logger.info(
+    `========== HUBSPOT PAYLOAD ==========\n  ${JSON.stringify(hubspotPayload, null, 2)}`,
+  );
 
   // 4. Send to HubSpot
-  await createTicket(hubspotPayload, ticketRecord.Email, ticketRecord.CompanyName);
+  await createTicket(
+    hubspotPayload,
+    ticketRecord.Email,
+    ticketRecord.CompanyName,
+  );
   logger.info(`✅ Sync Completed for Ticket ID: ${issueId}`);
 }
 
-
-
-
 syncSingleTicket({
-        "IssueID": 101649335,
-        "Priority": 0,
-        "StatusID": 1,
-        "IssueDate": "2026-07-15T06:56:01.617Z",
-        "Subject": "Client Code - Purpose for Order",
-        "Status": "New",
-        "UpdatedByUser": false,
-        "UpdatedByPerformer": false,
-        "CategoryID": 578944,
-        "UserName": "\"><img src=x onerror=alert(1)>",
-        "Technician": "tanya.elmore@healthipass.com",
-        "FirstName": "\"><img src=x onerror=alert(1)>",
-        "LastName": "\"><img src=x onerror=alert(1)>",
-        "DueDate": "2026-07-15T18:05:00Z",
-        "TechFirstName": "Tanya",
-        "TechLastName": "Elmore",
-        "LastUpdated": "2026-07-15T06:56:05.63Z",
-        "UpdatedForTechView": false,
-        "UserID": 15478050,
-        "CompanyID": 1532588,
-        "CompanyName": "Test",
-        "AssignedToUserID": 13814395,
-        "ResolvedDate": null,
-        "SectionID": 93557,
-        "Category": "Tickets - Hardware Orders",
-        "Origin": "InPerson",
-        "Email": "mrethical006+1@gmail.com",
-        "StatusColor": "",
-        "LastUpdatedByUserID": null,
-        "LastUpdatedUsername": null,
-        "StartDate": null,
-        "TimeSpentInSeconds": 0,
-        "AISentiment": 0
-    })
+  IssueID: 101700899,
+  Priority: 2,
+  StatusID: 1,
+  IssueDate: "2026-07-16T10:44:41.18Z",
+  Subject: "Test",
+  Status: "New",
+  UpdatedByUser: false,
+  UpdatedByPerformer: false,
+  CategoryID: 563284,
+  UserName: '"><img src=x onerror=alert(1)>',
+  Technician: null,
+  FirstName: '"><img src=x onerror=alert(1)>',
+  LastName: '"><img src=x onerror=alert(1)>',
+  DueDate: "2026-07-16T17:00:00Z",
+  TechFirstName: null,
+  TechLastName: null,
+  LastUpdated: "2026-07-16T10:44:43.947Z",
+  UpdatedForTechView: false,
+  UserID: 15478050,
+  CompanyID: 1532588,
+  CompanyName: "Test",
+  AssignedToUserID: null,
+  ResolvedDate: null,
+  SectionID: 145956,
+  Category: "Account Management - Client Success",
+  Origin: "WhatsApp",
+  Email: "mrethical006+1@gmail.com",
+  StatusColor: "",
+  LastUpdatedByUserID: null,
+  LastUpdatedUsername: null,
+  StartDate: null,
+  TimeSpentInSeconds: 0,
+  AISentiment: 0,
+});

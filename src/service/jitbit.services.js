@@ -182,27 +182,56 @@ async function getTicketDetails(ticketId) {
     });
     return response.data;
   } catch (error) {
-    console.error(`❌ Error fetching ticket details:`, error.message);
+    logger.error(`❌ Error fetching ticket details:`, error.message);
     return {};
   }
 }
 
 
 
-async function getTicketCustomFields(IssueID) {
+// async function getTicketCustomFields(IssueID) {
+//   try {
+//     const response = await axios.get(`https://healthipass.jitbit.com/api/TicketCustomFields`, {
+//       params: { id: IssueID },
+//       headers: {
+//         'Authorization': `Bearer ${process.env.JITBIT_API_KEY}`,
+//         'Accept-Encoding': 'gzip'
+
+//       }
+//     });
+
+//     return response.data; 
+//   } catch (error) {
+//     logger.error(`❌ Error fetching custom fields for ${IssueID}:`, error.message);
+//     return [];
+//   }
+// }
+
+ async function getTicketCustomFields(issueId) {
   try {
-    const response = await axios.get(`https://healthipass.jitbit.com/api/TicketCustomFields`, {
-      params: { id: IssueID },
-      headers: {
-        'Authorization': `Bearer ${process.env.JITBIT_API_KEY}`,
-        'Accept-Encoding': 'gzip'
-
+    const { data } = await axios.get(
+      "https://healthipass.jitbit.com/api/TicketCustomFields",
+      {
+        params: {
+          id: issueId, // IssueID = Ticket ID
+        },
+        headers: {
+          Authorization: `Bearer ${process.env.JITBIT_API_KEY}`,
+          "Accept-Encoding": "gzip",
+        },
       }
-    });
+    );
 
-    return response.data; 
+    logger.info(`✅ Custom fields fetched for ticket ${issueId}`);
+    return data;
   } catch (error) {
-    console.error(`❌ Error fetching custom fields for ${IssueID}:`, error.message);
+    logger.error(
+      `❌ Error fetching custom fields for ticket ${issueId}: ${
+        error.response?.data
+          ? JSON.stringify(error.response.data)
+          : error.message
+      }`
+    );
     return [];
   }
 }
