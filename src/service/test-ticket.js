@@ -2154,11 +2154,11 @@ async function syncSingleTicket(ticketRecord) {
     if (searchResponse.results && searchResponse.results.length > 0) {
       // logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}, Subject: "${subject}"). Skipping...`); 
       logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}). Skipping...`);
-      return; // Agar mil gaya to yahin se wapas laut jayega, aage ka code nahi chalega.
+      return; 
     }
   } catch (error) {
     logger.error(`❌ HubSpot Search Failed for IssueID ${issueId}: ${error.message}`);
-    // Agar search API fail hoti hai, hum ise skip kar rahe hain taaki duplicates na bane
+
     return; 
   }
   // =========================================================================
