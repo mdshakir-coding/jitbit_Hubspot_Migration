@@ -263,8 +263,6 @@
 
 
 //...........................New Code...........................//.........................
-
-
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
 import logger from "../utils/logger.js";
@@ -354,19 +352,20 @@ function formatHubSpotValue(hubspotKey, value) {
 }
 
 // ==========================================
-// Search Existing Company
+// Search Existing Company (ONLY by Name)
 // ==========================================
 
-async function searchCompanyById(companyId) {
+async function searchCompanyByName(companyName) {
+  if (!companyName) return null; // Skip if name is empty
   try {
     const response = await hubspotClient.crm.companies.searchApi.doSearch({
       filterGroups: [
         {
           filters: [
             {
-              propertyName: "company_id",
+              propertyName: "name",
               operator: "EQ",
-              value: companyId.toString(),
+              value: companyName.trim(), // Stripping extra spaces
             },
           ],
         },
@@ -376,7 +375,7 @@ async function searchCompanyById(companyId) {
 
     return response.results[0] || null;
   } catch (error) {
-    logger.error(`Company Search Failed: ${error.message}`);
+    logger.error(`Company Name Search Failed for '${companyName}': ${error.message}`);
     return null;
   }
 }
@@ -487,22 +486,19 @@ async function syncCompany() {
         // logger.info(JSON.stringify(finalCompany, null, 2));
 
         // ==============================
-        // Duplicate Check
+        // Duplicate Check (Only by Name)
         // ==============================
 
-        const existingCompany = await searchCompanyById(finalCompany.CompanyID);
+        const existingCompany = await searchCompanyByName(finalCompany.Name);
 
         if (existingCompany) {
           logger.info(
-            `⚠️ Company already exists in HubSpot. ID: ${existingCompany.id}`,
+            `⚠️ Company already exists in HubSpot (Skipping). Name: ${existingCompany.properties.name} | ID: ${existingCompany.id}`,
           );
           continue; // Skip creating and move to the next company in the loop
         }
 
         await createCompany(finalCompany, customFields);
-
-
-  
 
       } catch (companyError) {
         // Log the error for this specific company but don't stop the whole loop
@@ -510,14 +506,11 @@ async function syncCompany() {
       }
     }
 
-    
-
     logger.info("✅ All Companies Sync Completed.");
   } catch (error) {
     logger.error(`❌ Sync Failed: ${error.message}`);
   }
 }
-
 
 // ==========================================
 // Run

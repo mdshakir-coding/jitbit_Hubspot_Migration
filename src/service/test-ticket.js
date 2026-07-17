@@ -2133,7 +2133,35 @@ async function syncSingleTicket(ticketRecord) {
   }
 
   const issueId = ticketRecord.IssueID;
+  const subject = ticketRecord.Subject;
   logger.info(`🚀 Syncing Ticket ID: ${issueId}`);
+
+  // =========================================================================
+  // NAYA LOGIC: HubSpot me Search karein ki Issue_ID aur Subject pehle se hai ya nahi
+  // =========================================================================
+  try {
+    const searchResponse = await hubspotClient.crm.tickets.searchApi.doSearch({
+      filterGroups: [
+        {
+          filters: [
+            { propertyName: "issue_id", operator: "EQ", value: issueId.toString() },
+            // { propertyName: "subject", operator: "EQ", value: subject }
+          ]
+        }
+      ]
+    });
+
+    if (searchResponse.results && searchResponse.results.length > 0) {
+      // logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}, Subject: "${subject}"). Skipping...`); 
+      logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}). Skipping...`);
+      return; // Agar mil gaya to yahin se wapas laut jayega, aage ka code nahi chalega.
+    }
+  } catch (error) {
+    logger.error(`❌ HubSpot Search Failed for IssueID ${issueId}: ${error.message}`);
+    // Agar search API fail hoti hai, hum ise skip kar rahe hain taaki duplicates na bane
+    return; 
+  }
+  // =========================================================================
 
   let customFields = [];
   try {
@@ -2186,3 +2214,6 @@ async function syncAllTickets() {
 
 // Run the main process
 syncAllTickets();
+
+
+

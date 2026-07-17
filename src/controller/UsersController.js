@@ -51,6 +51,9 @@ async function syncUsers() {
     // 1. Fetch Users from Jitbit
     const allUsers = await getUsers();
 
+    logger.info(`Total Users fetched: ${allUsers.length}`);
+  
+
     if (!allUsers || allUsers.length === 0) {
       logger.info("No users found.");
       return;

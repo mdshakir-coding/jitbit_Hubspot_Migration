@@ -101,6 +101,9 @@
 // });
 
 // async function findCompanyInHubSpot(companyName) {
+//   // Added safety check: Skip search if companyName is blank or undefined
+//   if (!companyName) return null;
+
 //   try {
 //     const response = await hubspotClient.crm.companies.searchApi.doSearch({
 //       filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: companyName }] }],
@@ -108,6 +111,7 @@
 //     });
 //     return response.results.length > 0 ? response.results[0].id : null;
 //   } catch (e) {
+//     logger.error(`Error searching for company "${companyName}": ${e.message}`);
 //     return null;
 //   }
 // }
@@ -132,11 +136,12 @@
 //     }
 
 //     try {
-//       const hsCompanyId = await findCompanyInHubSpot(targetUser.CompanyName || "Test");
+//       // Removed the || "Test" fallback. It now uses the actual CompanyName from Jitbit.
+//       const hsCompanyId = await findCompanyInHubSpot(targetUser.CompanyName);
       
-//       // Original logic: If company not found, log warning and skip to next user
+//       // If company not found, log warning and skip to next user
 //       if (!hsCompanyId) {
-//         logger.warn(`⚠️ Company "${targetUser.CompanyName}" Not Found In HubSpot for ${targetUser.Email}. Skipping association.`);
+//         logger.warn(`⚠️ Company "${targetUser.CompanyName || 'Unknown'}" Not Found In HubSpot for ${targetUser.Email}. Skipping contact creation.`);
 //         continue; 
 //       }
 
@@ -195,153 +200,44 @@
 
 
 
-// ...............................New Code2 //..............................................
-
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
 import logger from "../utils/logger.js";
-import { 
-  getUsers, 
-  getCompanyDetails, 
-  getCompanyCustomFields 
-} from "./jitbit.services.js";
+import { getUsers } from "./jitbit.services.js";
 
 const hubspotClient = new hubspot.Client({
   accessToken: process.env.HUBSPOT_TOKEN,
 });
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function findCompanyInHubSpot(companyName) {
+  if (!companyName) return null;
 
-// In-memory cache so we don't repeat the same company lookups/creations across many users
-const companyCache = new Map(); 
-
-// ==========================================
-// Company Constants & Helpers
-// ==========================================
-const PROPERTY_OVERRIDES = {
-  "Engineer Responsible for Billing": "engineer_responsible_billing",
-  "ECI Notes (Pharmacy? Govt Ins no CoF? Etc)": "eci_notes",
-  "EHR is the same as PM": "ehr_is_same_as_pm",
-};
-
-const PROPERTIES_TO_IGNORE = [
-  "HubSpot ID",
-  "Uses HiP Kiosks (iPad app)",
-];
-
-function formatHubSpotProperty(label) {
-  if (!label) return "";
-  if (PROPERTY_OVERRIDES[label]) {
-    return PROPERTY_OVERRIDES[label];
-  }
-  return label
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_") 
-    .replace(/^_+|_+$/g, ""); 
-}
-
-function formatHubSpotValue(hubspotKey, value) {
-  if (value === null || value === undefined) return "";
-  let normalizedValue = value.toString().trim();
-
-  if (normalizedValue === "✓") normalizedValue = "true";
-
-  if (hubspotKey === "cost_estimator") {
-    if (normalizedValue.toLowerCase() === "true") return "Yes";
-    if (normalizedValue.toLowerCase() === "false") return "No";
-  }
-
-  if (hubspotKey === "client_status" && normalizedValue === "Disabled / Churned") {
-    return "Churned";
-  }
-  return normalizedValue;
-}
-
-// ==========================================
-// Company Search & Creation Logic
-// ==========================================
-
-async function createMissingCompany(companyId, companyName) {
   try {
-    logger.info(`Fetching details from Jitbit to create missing Company: ${companyName} (${companyId})...`);
-    
-    // 1. Fetch Company details from Jitbit
-    const companyDetails = await getCompanyDetails(companyId);
-    const customFields = await getCompanyCustomFields(companyId);
-
-    const mappedProperties = {};
-
-    if (customFields && customFields.length > 0) {
-      customFields.forEach((field) => {
-        if (PROPERTIES_TO_IGNORE.includes(field.FieldName)) return;
-        const hubspotProperty = formatHubSpotProperty(field.FieldName);
-        const hubspotValue = formatHubSpotValue(hubspotProperty, field.Value);
-        mappedProperties[hubspotProperty] = hubspotValue;
-      });
-    }
-
-    const payload = {
-      name: companyName?.trim() || companyDetails?.Name?.trim() || "Unknown Company",
-      domain: companyDetails?.EmailDomain?.trim() || "",
-      company_id: companyId.toString(),
-      ...mappedProperties,
-    };
-
-    // 2. Create Company in HubSpot
-    const response = await hubspotClient.crm.companies.basicApi.create({
-      properties: payload,
+    const response = await hubspotClient.crm.companies.searchApi.doSearch({
+      filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: companyName.trim() }] }],
+      properties: ["name"]
     });
-
-    logger.info(`✅ Missing Company Created Successfully in HubSpot: ${payload.name} | ID: ${response.id}`);
-    return response.id;
-  } catch (error) {
-    logger.error(`❌ Failed to create missing Company [${companyId}]: ${JSON.stringify(error.response?.body || error.message)}`);
+    return response.results.length > 0 ? response.results[0].id : null;
+  } catch (e) {
+    logger.error(`Error searching for company "${companyName}": ${e.message}`);
     return null;
   }
 }
 
-async function findCompanyByJitbitId(companyId, fallbackName) {
-  if (!companyId) return null;
-  
-  const cacheKey = String(companyId);
-  if (companyCache.has(cacheKey)) return companyCache.get(cacheKey);
-
-  let hsCompanyId = null;
-
-  // 1. Search by custom property 'company_id' first (most reliable)
+async function createBasicCompanyInHubSpot(companyName) {
   try {
-    const byId = await hubspotClient.crm.companies.searchApi.doSearch({
-      filterGroups: [{ filters: [{ propertyName: "company_id", operator: "EQ", value: cacheKey }] }],
-      properties: ["name", "company_id"],
-      limit: 1,
+    const response = await hubspotClient.crm.companies.basicApi.create({
+      properties: { name: companyName.trim() }
     });
-    if (byId.results?.length > 0) hsCompanyId = byId.results[0].id;
-  } catch (error) {
-    // Fails silently if property doesn't exist
+    return response.id;
+  } catch (e) {
+    logger.error(`Error creating company "${companyName}": ${e.message}`);
+    return null;
   }
-
-  // 2. Fallback search by exact Name
-  if (!hsCompanyId && fallbackName) {
-    try {
-      const byName = await hubspotClient.crm.companies.searchApi.doSearch({
-        filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: fallbackName.trim() }] }],
-        properties: ["name"],
-        limit: 1,
-      });
-      if (byName.results?.length > 0) hsCompanyId = byName.results[0].id;
-    } catch (error) {}
-  }
-
-  if (hsCompanyId) companyCache.set(cacheKey, hsCompanyId);
-  return hsCompanyId;
 }
 
-// ==========================================
-// Main Sync Logic
-// ==========================================
-
 async function runSync() {
-  logger.info("🚀 Starting Full Sync: Jitbit to HubSpot (Users & Companies)...");
+  logger.info("🚀 Starting Full Sync: Jitbit to HubSpot...");
   const users = await getUsers();
   
   if (!users || users.length === 0) {
@@ -351,58 +247,45 @@ async function runSync() {
   
   logger.info(`✅ Fetched ${users.length} users. Processing started...`);
 
-  // Loop through all users fetched from Jitbit
   for (const targetUser of users) {
-    
-    // Remove any accidental leading/trailing spaces from the email
-    const cleanEmail = targetUser.Email ? targetUser.Email.trim() : "";
+    // 1. Trim the email right away to fix the HubSpot 400 error
+    const userEmail = targetUser.Email ? targetUser.Email.trim() : null;
 
-    // Skip if email is missing or empty to prevent HubSpot API errors
-    if (!cleanEmail) {
-      logger.warn(`⚠️ Skipping user ID ${targetUser.UserID} because Email is missing or invalid.`);
+    if (!userEmail) {
+      logger.warn(`⚠️ Skipping user ID ${targetUser.UserID} because Email is missing or empty.`);
       continue; 
     }
 
     try {
       let hsCompanyId = null;
 
-      // Only attempt company logic if the user actually belongs to a company in Jitbit
-      if (targetUser.CompanyID) {
-        // 1. Search for Company in HubSpot
-        hsCompanyId = await findCompanyByJitbitId(targetUser.CompanyID, targetUser.CompanyName);
-
-        // 2. If company doesn't exist in HubSpot, fetch from Jitbit and Create
+      if (targetUser.CompanyName) {
+        hsCompanyId = await findCompanyInHubSpot(targetUser.CompanyName);
+        
         if (!hsCompanyId) {
-          logger.warn(`⚠️ Company "${targetUser.CompanyName}" not found in HubSpot for user ${cleanEmail}. Initiating creation...`);
-          hsCompanyId = await createMissingCompany(targetUser.CompanyID, targetUser.CompanyName);
-          
-          // Save to cache so other users from the same company don't trigger creation again
-          if (hsCompanyId) companyCache.set(String(targetUser.CompanyID), hsCompanyId);
+          logger.info(`🏢 Company "${targetUser.CompanyName}" not found. Creating new company...`);
+          hsCompanyId = await createBasicCompanyInHubSpot(targetUser.CompanyName);
         }
+      } else {
+        logger.info(`ℹ️ User ${userEmail} has no CompanyName. Proceeding to create/update contact only.`);
       }
 
-      // 3. Prepare Contact Properties (using cleaned values)
+      // 2. Apply trim() to other text fields to prevent similar validation errors
       const properties = {
-        // Basic Information
         firstname: targetUser.FirstName ? targetUser.FirstName.trim() : "",
         lastname: targetUser.LastName ? targetUser.LastName.trim() : "",
-        email: cleanEmail,
+        email: userEmail,
         phone: targetUser.Phone ? targetUser.Phone.trim() : "",
-        company: targetUser.CompanyName ? targetUser.CompanyName.trim() : "",
         city: targetUser.Location ? targetUser.Location.trim() : "",
-
-        // Custom Properties
         full_name: targetUser.FullName ? targetUser.FullName.trim() : "",
         client_id__sender_id_: String(targetUser.UserID),
-        associatedcompanyid:
-          targetUser.CompanyID != null
-            ? String(targetUser.CompanyID)
-            : null,
       };
 
-      // 4. Contact Create/Update Logic
+      if (targetUser.CompanyName) properties.company = targetUser.CompanyName.trim();
+      if (targetUser.CompanyID != null) properties.associatedcompanyid = String(targetUser.CompanyID);
+
       const existing = await hubspotClient.crm.contacts.searchApi.doSearch({
-        filterGroups: [{ filters: [{ propertyName: "email", operator: "EQ", value: cleanEmail }] }],
+        filterGroups: [{ filters: [{ propertyName: "email", operator: "EQ", value: userEmail }] }],
         properties: ["email"]
       });
 
@@ -410,30 +293,23 @@ async function runSync() {
       if (existing.results.length > 0) {
         contactId = existing.results[0].id;
         await hubspotClient.crm.contacts.basicApi.update(contactId, { properties });
-        logger.info(`🔄 Updated contact: ${cleanEmail} (${contactId})`);
+        logger.info(`🔄 Updated contact: ${userEmail} (${contactId})`);
       } else {
         const newContact = await hubspotClient.crm.contacts.basicApi.create({ properties });
         contactId = newContact.id;
-        logger.info(`✅ Created contact: ${cleanEmail} (${contactId})`);
+        logger.info(`✅ Created contact: ${userEmail} (${contactId})`);
       }
 
-      // 5. Association (Only if a company ID was successfully found or created)
       if (hsCompanyId) {
         await hubspotClient.crm.associations.v4.basicApi.create("contact", contactId, "company", hsCompanyId, [
           { associationCategory: "HUBSPOT_DEFINED", associationTypeId: 1 }
         ]);
         logger.info(`🎉 Successfully Associated Contact ${contactId} with Company ${hsCompanyId}`);
-      } else if (targetUser.CompanyID) {
-        logger.error(`❌ Could not associate Contact ${contactId} because Company creation failed.`);
       }
 
     } catch (error) {
-      // Catch error for specific user but continue the loop
-      logger.error(`❌ Sync Failed for ${cleanEmail}: ${error.message}`);
+      logger.error(`❌ Sync Failed for ${userEmail}: ${error.message}`);
     }
-
-    // Small delay to prevent hitting HubSpot API rate limits (100 req / 10 sec)
-    await sleep(100);
   }
 
   logger.info("🏁 Full Sync Completed Successfully!");

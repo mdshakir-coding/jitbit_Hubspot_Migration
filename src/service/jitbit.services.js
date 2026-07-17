@@ -32,6 +32,12 @@ const getCompanies = async () => {
   }
 };
 
+
+
+
+
+
+
 const getUsers = async () => {
   try {
     logger.info("Fetching users from Jitbit...");
@@ -60,9 +66,47 @@ const getUsers = async () => {
   }
 };
 
+// const getTickets = async () => {
+//   try {
+//     logger.info("Fetching tickets from Jitbit...");
+
+//     const response = await axios.get(
+//       "https://healthipass.jitbit.com/helpdesk/api/Tickets",
+//       {
+//         headers: {
+//           Authorization: `Bearer ${process.env.JITBIT_API_KEY}`,
+//           Accept: "application/json",
+//         },
+//       },
+//     );
+
+//     logger.info(`Successfully fetched ${response.data?.length || 0} tickets.`);
+//     return response.data;
+//   } catch (error) {
+//     logger.error(
+//       `Failed to fetch tickets: ${
+//         error.response?.data
+//           ? JSON.stringify(error.response.data)
+//           : error.message
+//       }`,
+//     );
+//     throw error;
+//   }
+// };
+
+
+
+
+
+
+
 const getTickets = async () => {
-  try {
-    logger.info("Fetching tickets from Jitbit...");
+  const limit = 300;
+  let offset = 0;
+  let allTickets = [];
+
+  while (true) {
+    console.log(`Fetching tickets ${offset} - ${offset + limit}`);
 
     const response = await axios.get(
       "https://healthipass.jitbit.com/helpdesk/api/Tickets",
@@ -71,22 +115,35 @@ const getTickets = async () => {
           Authorization: `Bearer ${process.env.JITBIT_API_KEY}`,
           Accept: "application/json",
         },
-      },
+        params: {
+          count: limit,
+          offset: offset,
+        },
+      }
     );
 
-    logger.info(`Successfully fetched ${response.data?.length || 0} tickets.`);
-    return response.data;
-  } catch (error) {
-    logger.error(
-      `Failed to fetch tickets: ${
-        error.response?.data
-          ? JSON.stringify(error.response.data)
-          : error.message
-      }`,
-    );
-    throw error;
+    const tickets = response.data || [];
+
+    if (tickets.length === 0) {
+      break;
+    }
+
+    allTickets.push(...tickets);
+
+    if (tickets.length < limit) {
+      break;
+    }
+    return allTickets;
+
+    offset += limit;
   }
+
+  logger.info(`Total Tickets Fetched: ${allTickets.length}`);
+
+  return allTickets;
 };
+
+
 async function searchCompanyById(companyId) {
   try {
     const response = await hubspotClient.crm.companies.searchApi.doSearch({
@@ -268,6 +325,9 @@ const getAssets = async () => {
 // ==========================================
 // Fetch Jitbit Company By ID
 // ==========================================
+
+
+
 
 const getCompanyById = async (companyId) => {
   try {

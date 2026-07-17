@@ -961,7 +961,7 @@ function formatHubSpotValue(hubspotKey, value) {
 
 async function createMissingCompany(companyId, companyName) {
   try {
-    logger.info(`Fetching details from Jitbit to create missing Company: ${companyName} (${companyId})...`);
+    logger.info(`➕ [CREATE COMPANY] Fetching details from Jitbit to create missing Company: "${companyName}" (ID: ${companyId})...`);
     
     // 1. Fetch Company details from Jitbit
     const companyDetails = await getCompanyDetails(companyId);
@@ -990,10 +990,10 @@ async function createMissingCompany(companyId, companyName) {
       properties: payload,
     });
 
-    logger.info(`✅ Missing Company Created Successfully in HubSpot: ${payload.name} | ID: ${response.id}`);
+    logger.info(`✅ [COMPANY CREATED] Successfully created Company in HubSpot: "${payload.name}" | HubSpot ID: ${response.id}`);
     return { id: response.id };
   } catch (error) {
-    logger.error(`❌ Failed to create missing Company [${companyId}]: ${JSON.stringify(error.response?.body || error.message)}`);
+    logger.error(`❌ [CREATE ERROR] Failed to create missing Company [${companyId}]: ${JSON.stringify(error.response?.body || error.message)}`);
     return null;
   }
 }
@@ -1092,9 +1092,14 @@ async function resolveAssetCompanyAssociation() {
 
 async function findCompanyByJitbitId(companyId, fallbackName) {
   const cacheKey = String(companyId);
-  if (companyCache.has(cacheKey)) return companyCache.get(cacheKey);
+  
+  if (companyCache.has(cacheKey)) {
+    logger.info(`⚡ [CACHE HIT] Company ID [${companyId}] found in local cache | HubSpot ID: ${companyCache.get(cacheKey).id}`);
+    return companyCache.get(cacheKey);
+  }
 
   let company = null;
+  logger.info(`🔍 [SEARCH COMPANY] Searching HubSpot by Jitbit Company ID: ${companyId}...`);
 
   // 1. Search by custom property 'company_id'
   try {
@@ -1104,12 +1109,14 @@ async function findCompanyByJitbitId(companyId, fallbackName) {
       limit: 1,
     });
     company = byId.results?.[0] || null;
+    if (company) logger.info(`✅ [FOUND BY ID] Company found using Jitbit ID | HubSpot ID: ${company.id}`);
   } catch (error) {
     // Ignore error silently if property doesn't exist in Hubspot yet
   }
 
   // 2. Search by Name fallback
   if (!company && fallbackName) {
+    logger.warn(`⚠️ [NOT FOUND BY ID] ID [${companyId}] not found in HubSpot. Falling back to search by Name: "${fallbackName}"...`);
     try {
       const byName = await hubspotClient.crm.companies.searchApi.doSearch({
         filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: fallbackName }] }],
@@ -1117,6 +1124,11 @@ async function findCompanyByJitbitId(companyId, fallbackName) {
         limit: 1,
       });
       company = byName.results?.[0] || null;
+      if (company) {
+        logger.info(`✅ [FOUND BY NAME] Company found using Name | HubSpot ID: ${company.id}`);
+      } else {
+        logger.warn(`❌ [NOT FOUND] Company "${fallbackName}" not found in HubSpot by Name either.`);
+      }
     } catch (error) {}
   }
 
@@ -1152,10 +1164,10 @@ async function createAsset(asset) {
       { properties },
     );
 
-    logger.info(`✅ Asset Created: ${response.id} (${asset.ModelName})`);
+    logger.info(`✅ [ASSET CREATED] HubSpot Asset ID: ${response.id} (${asset.ModelName})`);
     return response;
   } catch (error) {
-    logger.error(`Asset Create Error [${asset.ItemID}]: ${JSON.stringify(error.body || error.message)}`);
+    logger.error(`❌ [ASSET CREATE ERROR] Asset [${asset.ItemID}]: ${JSON.stringify(error.body || error.message)}`);
     return null;
   }
 }
@@ -1174,18 +1186,18 @@ async function associateAssetCompany(assetId, companyId, association) {
 
   try {
     await attempt(association.reversed === true);
-    logger.info("✅ Asset Associated With Company");
+    logger.info(`🔗 [ASSOCIATION SUCCESS] Asset [${assetId}] Associated With Company [${companyId}]`);
   } catch (error) {
     const errorText = JSON.stringify(error.body || error.message);
     if (errorText.includes("INVALID_OBJECT_IDS")) {
       try {
         await attempt(association.reversed !== true);
         association.reversed = !association.reversed; 
-        logger.info("✅ Asset Associated With Company (auto-corrected direction)");
+        logger.info(`🔗 [ASSOCIATION SUCCESS] Asset Associated With Company (auto-corrected direction)`);
         return;
       } catch (retryError) {}
     }
-    logger.error(`Association Error: ${errorText}`);
+    logger.error(`❌ [ASSOCIATION ERROR] ${errorText}`);
   }
 }
 
@@ -1197,7 +1209,7 @@ async function syncAssets() {
   logger.info("🚀 Starting Full Asset Sync...");
 
   const allAssets = await getAssets();
-  logger.info(`Successfully fetched ${allAssets.length} assets from Jitbit`);
+  logger.info(`✅ Successfully fetched ${allAssets.length} assets from Jitbit`);
 
   if (!allAssets || allAssets.length === 0) return;
 
@@ -1209,21 +1221,32 @@ async function syncAssets() {
   await ensureAssetDateProperties();
 
   for (const asset of allAssets) {
-    logger.info(`Processing Asset: ${asset.ItemID} (${asset.ModelName})`);
+    // Add visual separator for terminal readability
+    logger.info(`\n---------------------------------------------------------`);
+    logger.info(`📦 [PROCESSING ASSET] ID: ${asset.ItemID} | Model: ${asset.ModelName}`);
+
+    // 👉 NEW LOGIC: Skip if Company or CompanyID is null
+    if (asset.Company === null || asset.CompanyID === null) {
+      logger.warn(`⏭️ [SKIP ASSET] Skipping Asset ID: ${asset.ItemID} because Company is NULL.`);
+      skipped++;
+      continue;
+    }
+
+    logger.info(`🏢 [COMPANY DETAILS] Name: "${asset.Company}" | Jitbit ID: ${asset.CompanyID}`);
 
     // 1. Search for Company in HubSpot
     let company = await findCompanyByJitbitId(asset.CompanyID, asset.Company);
 
     // 2. If company doesn't exist in HubSpot, fetch from Jitbit and Create
     if (!company) {
-      logger.warn(`⚠️ Company not found in HubSpot. Initiating Jitbit fetch & creation for: ${asset.Company}...`);
+      logger.warn(`⚠️ [ACTION] Initiating Company Creation for "${asset.Company}"...`);
       company = await createMissingCompany(asset.CompanyID, asset.Company);
       
       if (company) companyCache.set(String(asset.CompanyID), company);
     }
 
     if (!company) {
-      logger.error(`❌ Could not find or create company for asset ${asset.ItemID}. Skipping Asset.`);
+      logger.error(`❌ [SKIP ASSET] Could not find or create company for asset ${asset.ItemID}. Skipping.`);
       skipped++;
       continue;
     }
@@ -1243,7 +1266,7 @@ async function syncAssets() {
     await sleep(100);
   }
 
-  logger.info(`🚀 Full Asset Sync Completed. Created: ${created}, Skipped: ${skipped}, Failed: ${failed}`);
+  logger.info(`\n🚀 Full Asset Sync Completed. \n✅ Created: ${created} \n⏭️ Skipped: ${skipped} \n❌ Failed: ${failed}`);
 }
 
 syncAssets();
