@@ -1,5 +1,6 @@
 
 
+// //...........................New Code...........................//.........................
 // import "dotenv/config";
 // import * as hubspot from "@hubspot/api-client";
 // import logger from "../utils/logger.js";
@@ -89,19 +90,20 @@
 // }
 
 // // ==========================================
-// // Search Existing Company
+// // Search Existing Company (ONLY by Name)
 // // ==========================================
 
-// async function searchCompanyById(companyId) {
+// async function searchCompanyByName(companyName) {
+//   if (!companyName) return null; // Skip if name is empty
 //   try {
 //     const response = await hubspotClient.crm.companies.searchApi.doSearch({
 //       filterGroups: [
 //         {
 //           filters: [
 //             {
-//               propertyName: "company_id",
+//               propertyName: "name",
 //               operator: "EQ",
-//               value: companyId.toString(),
+//               value: companyName.trim(), // Stripping extra spaces
 //             },
 //           ],
 //         },
@@ -111,7 +113,7 @@
 
 //     return response.results[0] || null;
 //   } catch (error) {
-//     logger.error(`Company Search Failed: ${error.message}`);
+//     logger.error(`Company Name Search Failed for '${companyName}': ${error.message}`);
 //     return null;
 //   }
 // }
@@ -166,7 +168,7 @@
 //       `✅ Company Synced Successfully: ${company.Name} | HubSpot ID: ${response.id}`,
 //     );
 
-//     return response.id;
+//     // return response.id;
 //   } catch (error) {
 //     logger.error(`❌ Company Sync Failed: ${company.Name}`);
 
@@ -181,7 +183,7 @@
 // }
 
 // // ==========================================
-// // Sync One Company Testing
+// // Sync All Companies (Production)
 // // ==========================================
 
 // async function syncCompany() {
@@ -193,53 +195,56 @@
 //       return;
 //     }
 
-//     // Find Testing Company
-//     const company = companies.find((c) => c.CompanyID === 1414826);
+//     logger.info(`🚀 Found ${companies.length} companies to sync.`);
 
-//     if (!company) {
-//       logger.info("Company ID 1532588 not found.");
-//       return;
+//     // Loop through all fetched companies
+//     for (const company of companies) {
+//       try {
+//         logger.info(`🚀 Syncing Company: ${company.Name} (${company.CompanyID})`);
+
+//         // ==============================
+//         // Fetch Complete Company Details
+//         // ==============================
+
+//         const companyDetails = await getCompanyDetails(company.CompanyID);
+
+//         // ==============================
+//         // Fetch Custom Fields
+//         // ==============================
+
+//         const customFields = await getCompanyCustomFields(company.CompanyID);
+
+//         // Merge Jitbit Company Data
+//         const finalCompany = {
+//           ...company,
+//           ...companyDetails,
+//         };
+
+//         logger.info("========== FINAL COMPANY DATA ==========");
+//         // logger.info(JSON.stringify(finalCompany, null, 2));
+
+//         // ==============================
+//         // Duplicate Check (Only by Name)
+//         // ==============================
+
+//         const existingCompany = await searchCompanyByName(finalCompany.Name);
+
+//         if (existingCompany) {
+//           logger.info(
+//             `⚠️ Company already exists in HubSpot (Skipping). Name: ${existingCompany.properties.name} | ID: ${existingCompany.id}`,
+//           );
+//           continue; // Skip creating and move to the next company in the loop
+//         }
+
+//         await createCompany(finalCompany, customFields);
+
+//       } catch (companyError) {
+//         // Log the error for this specific company but don't stop the whole loop
+//         logger.error(`❌ Failed to process company ${company.Name || company.CompanyID}: ${companyError.message}`);
+//       }
 //     }
 
-//     logger.info(`🚀 Syncing Company: ${company.Name} (${company.CompanyID})`);
-
-//     // ==============================
-//     // Fetch Complete Company Details
-//     // ==============================
-
-//     const companyDetails = await getCompanyDetails(company.CompanyID);
-
-//     // ==============================
-//     // Fetch Custom Fields
-//     // ==============================
-
-//     const customFields = await getCompanyCustomFields(company.CompanyID);
-
-//     // Merge Jitbit Company Data
-//     const finalCompany = {
-//       ...company,
-//       ...companyDetails,
-//     };
-
-//     logger.info("========== FINAL COMPANY DATA ==========");
-//     logger.info(JSON.stringify(finalCompany, null, 2));
-
-//     // ==============================
-//     // Duplicate Check
-//     // ==============================
-
-//     const existingCompany = await searchCompanyById(finalCompany.CompanyID);
-
-//     if (existingCompany) {
-//       logger.info(
-//         `⚠️ Company already exists in HubSpot. ID: ${existingCompany.id}`,
-//       );
-//       return;
-//     }
-
-//     await createCompany(finalCompany, customFields);
-
-//     logger.info("✅ Test Company Sync Completed.");
+//     logger.info("✅ All Companies Sync Completed.");
 //   } catch (error) {
 //     logger.error(`❌ Sync Failed: ${error.message}`);
 //   }
@@ -262,7 +267,8 @@
 // export { syncCompany, runSync };
 
 
-//...........................New Code...........................//.........................
+
+
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
 import logger from "../utils/logger.js";
@@ -352,30 +358,31 @@ function formatHubSpotValue(hubspotKey, value) {
 }
 
 // ==========================================
-// Search Existing Company (ONLY by Name)
+// Search Existing Company (ONLY by Domain)
 // ==========================================
 
-async function searchCompanyByName(companyName) {
-  if (!companyName) return null; // Skip if name is empty
+async function searchCompanyByDomain(domain) {
+  if (!domain) return null; // Skip if domain is empty
+  
   try {
     const response = await hubspotClient.crm.companies.searchApi.doSearch({
       filterGroups: [
         {
           filters: [
             {
-              propertyName: "name",
+              propertyName: "domain",
               operator: "EQ",
-              value: companyName.trim(), // Stripping extra spaces
+              value: domain.trim(), // Stripping extra spaces
             },
           ],
         },
       ],
-      properties: ["name", "company_id"],
+      properties: ["domain", "name", "company_id"],
     });
 
     return response.results[0] || null;
   } catch (error) {
-    logger.error(`Company Name Search Failed for '${companyName}': ${error.message}`);
+    logger.error(`Company Domain Search Failed for '${domain}': ${error.message}`);
     return null;
   }
 }
@@ -427,7 +434,7 @@ async function createCompany(company, customFields) {
     });
 
     logger.info(
-      `✅ Company Synced Successfully: ${company.Name} | HubSpot ID: ${response.id}`,
+      `✅ Company Synced Successfully: ${company.Name} | HubSpot ID: ${response.id}`
     );
 
     // return response.id;
@@ -486,14 +493,15 @@ async function syncCompany() {
         // logger.info(JSON.stringify(finalCompany, null, 2));
 
         // ==============================
-        // Duplicate Check (Only by Name)
+        // Duplicate Check (Only by Domain)
         // ==============================
-
-        const existingCompany = await searchCompanyByName(finalCompany.Name);
+        
+        // Match using the EmailDomain from Jitbit
+        const existingCompany = await searchCompanyByDomain(finalCompany.EmailDomain);
 
         if (existingCompany) {
           logger.info(
-            `⚠️ Company already exists in HubSpot (Skipping). Name: ${existingCompany.properties.name} | ID: ${existingCompany.id}`,
+            `⚠️ Company already exists in HubSpot (Skipping). Domain: ${existingCompany.properties.domain} | ID: ${existingCompany.id}`
           );
           continue; // Skip creating and move to the next company in the loop
         }
