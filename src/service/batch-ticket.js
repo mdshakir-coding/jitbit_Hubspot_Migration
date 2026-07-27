@@ -1,3 +1,6 @@
+
+
+
 // // ...............................Full Run Code //...............................................
 
 // import "dotenv/config";
@@ -211,31 +214,8 @@
 //   if (!ticketRecord || !ticketRecord.IssueID) return null;
 
 //   const issueId = ticketRecord.IssueID;
-//   const subject = ticketRecord.Subject;
 
-//   // 1. Check if Ticket Exists
-//   try {
-//     const searchResponse = await hubspotClient.crm.tickets.searchApi.doSearch({
-//       filterGroups: [
-//         {
-//           filters: [
-//             { propertyName: "issue_id", operator: "EQ", value: issueId.toString() }
-//             // { propertyName: "subject", operator: "EQ", value: subject }
-//           ]
-//         }
-//       ]
-//     });
-//     if (searchResponse.results && searchResponse.results.length > 0) {
-//         // logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}, Subject: "${subject}"). Skipping...`); 
-//       logger.info(`⏭️ Ticket already exists (IssueID: ${issueId}). Skipping...`);
-//       return null;
-//     }
-//   } catch (error) {
-//     logger.error(`❌ HubSpot Search Failed for IssueID ${issueId}: ${error.message}`);
-//     return null; 
-//   }
-
-//   // 2. Map Properties
+//   // 1. Map Properties
 //   let customFields = [];
 //   try {
 //     customFields = await getTicketCustomFields(issueId);
@@ -246,7 +226,7 @@
 //   const properties = transformTicket(ticketRecord, customFields);
 //   const associations = [];
 
-//   // 3. Search and Append Associations if they exist
+//   // 2. Search and Append Associations if they exist
 //   if (ticketRecord.Email) {
 //     try {
 //       const contactSearch = await hubspotClient.crm.contacts.searchApi.doSearch({
@@ -312,7 +292,7 @@
 //     }
 
 //     if (batchInputs.length === 0) {
-//       logger.info("ℹ️ All tickets already exist or failed. Nothing to create.");
+//       logger.info("ℹ️ All tickets failed to prepare. Nothing to create.");
 //       return;
 //     }
 
@@ -344,6 +324,13 @@
 
 // // Run the main process
 // syncAllTickets();
+
+
+
+
+
+
+
 
 
 
@@ -518,6 +505,7 @@ function transformTicket(ticketRecord, customFields) {
     hs_pipeline: targetPipeline,
     hs_pipeline_stage: targetStage,
     issue_id: ticketRecord.IssueID.toString(),
+    sourceid: ticketRecord.IssueID.toString(), // ✔️ Added sourceid mapping for Tickets
     subject: ticketRecord.Subject,
     createdate: ticketRecord.IssueDate,
   };
@@ -563,6 +551,30 @@ async function prepareTicketForBatch(ticketRecord) {
   if (!ticketRecord || !ticketRecord.IssueID) return null;
 
   const issueId = ticketRecord.IssueID;
+
+  // =========================================================================
+  // ✔️ NAYA LOGIC: HubSpot me Search karein ki 'sourceid' pehle se hai ya nahi
+  // =========================================================================
+  try {
+    const searchResponse = await hubspotClient.crm.tickets.searchApi.doSearch({
+      filterGroups: [
+        {
+          filters: [
+            { propertyName: "sourceid", operator: "EQ", value: issueId.toString() }
+          ]
+        }
+      ]
+    });
+
+    if (searchResponse.results && searchResponse.results.length > 0) {
+      logger.info(`⏭️ Ticket already exists in HubSpot (SourceID: ${issueId}). Skipping from Batch...`);
+      return null; // Skip adding this ticket to the batch array
+    }
+  } catch (error) {
+    logger.error(`❌ HubSpot Search Failed for SourceID ${issueId}: ${error.message}`);
+    return null; // Ignore on error to prevent duplicate insertion
+  }
+  // =========================================================================
 
   // 1. Map Properties
   let customFields = [];
@@ -641,7 +653,7 @@ async function syncAllTickets() {
     }
 
     if (batchInputs.length === 0) {
-      logger.info("ℹ️ All tickets failed to prepare. Nothing to create.");
+      logger.info("ℹ️ All tickets already exist or failed to prepare. Nothing to create in Batch.");
       return;
     }
 
