@@ -171,6 +171,7 @@ function transformTicket(ticketRecord, customFields) {
     issue_id: ticketRecord.IssueID.toString(),
     subject: ticketRecord.Subject,
     createdate: ticketRecord.IssueDate,
+    sourceid: String(ticketRecord.IssueID),
   };
 
   if (ticketRecord.DueDate) mappedProperties.due_date = toMidnightUTC(ticketRecord.DueDate);
