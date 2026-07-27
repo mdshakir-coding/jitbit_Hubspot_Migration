@@ -133,7 +133,7 @@ const getTickets = async () => {
     if (tickets.length < limit) {
       break;
     }
-    // return allTickets; //todo remove this line after testing
+    return allTickets; //todo remove this line after testing
 
     offset += limit;
   }

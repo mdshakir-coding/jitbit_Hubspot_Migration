@@ -193,16 +193,18 @@ async function runSync() {
 
     try {
       // ==========================================
-      // Step A: Contact Check (Exit if Found)
+      // Step A: Contact Check (Exit if Found - ONLY BY SOURCEID)
       // ==========================================
+      const sourceIdVal = String(targetUser.UserID);
+
       const existingContact = await hubspotClient.crm.contacts.searchApi.doSearch({
-        filterGroups: [{ filters: [{ propertyName: "email", operator: "EQ", value: userEmail }] }],
-        properties: ["email"]
+        filterGroups: [{ filters: [{ propertyName: "sourceid", operator: "EQ", value: sourceIdVal }] }], // Changed email to sourceid
+        properties: ["email", "sourceid"]
       });
 
       if (existingContact.results.length > 0) {
-        // As per instruction: "Contacts based on email address, if match found exit"
-        logger.info(`⚠️ Contact already exists in HubSpot (Skipping/Exit). Email: ${userEmail}`);
+        // As per instruction: Contacts based on sourceid, if match found exit
+        logger.info(`⚠️ Contact already exists in HubSpot (Skipping/Exit). SourceID: ${sourceIdVal} | Email: ${userEmail}`);
         continue; // Skip the rest of the loop and move to the next user
       }
 
@@ -239,7 +241,8 @@ async function runSync() {
         phone: targetUser.Phone ? targetUser.Phone.trim() : "",
         city: targetUser.Location ? targetUser.Location.trim() : "",
         full_name: targetUser.FullName ? targetUser.FullName.trim() : "",
-        client_id__sender_id_: String(targetUser.UserID),
+        client_id__sender_id_: sourceIdVal,
+        sourceid: sourceIdVal, // ✔️ Added sourceid mapping without removing anything else
       };
 
       if (targetUser.CompanyName) properties.company = targetUser.CompanyName.trim();
@@ -261,7 +264,7 @@ async function runSync() {
       }
 
     } catch (error) {
-      logger.error(`❌ Sync Failed for ${userEmail}: ${error.message}`);
+      logger.error(`❌ Sync Failed for SourceID ${targetUser.UserID} / ${userEmail}: ${error.message}`);
     }
   }
 

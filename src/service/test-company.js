@@ -267,8 +267,6 @@
 // export { syncCompany, runSync };
 
 
-
-
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
 import logger from "../utils/logger.js";
@@ -358,11 +356,11 @@ function formatHubSpotValue(hubspotKey, value) {
 }
 
 // ==========================================
-// Search Existing Company (ONLY by Domain)
+// Search Existing Company (By SourceID)
 // ==========================================
 
-async function searchCompanyByDomain(domain) {
-  if (!domain) return null; // Skip if domain is empty
+async function searchCompanyBySourceId(sourceid) {
+  if (!sourceid) return null; // Skip if sourceid is empty
   
   try {
     const response = await hubspotClient.crm.companies.searchApi.doSearch({
@@ -370,19 +368,19 @@ async function searchCompanyByDomain(domain) {
         {
           filters: [
             {
-              propertyName: "domain",
+              propertyName: "sourceid",
               operator: "EQ",
-              value: domain.trim(), // Stripping extra spaces
+              value: sourceid.toString().trim(),
             },
           ],
         },
       ],
-      properties: ["domain", "name", "company_id"],
+      properties: ["domain", "name", "company_id", "sourceid"],
     });
 
     return response.results[0] || null;
   } catch (error) {
-    logger.error(`Company Domain Search Failed for '${domain}': ${error.message}`);
+    logger.error(`Company SourceID Search Failed for '${sourceid}': ${error.message}`);
     return null;
   }
 }
@@ -423,6 +421,7 @@ async function createCompany(company, customFields) {
       name: company.Name || "",
       domain: company.EmailDomain || "",
       company_id: company.CompanyID?.toString() || "",
+      sourceid: company.CompanyID?.toString() || "", // Mapping for sourceid
       ...mappedProperties,
     };
 
@@ -493,15 +492,15 @@ async function syncCompany() {
         // logger.info(JSON.stringify(finalCompany, null, 2));
 
         // ==============================
-        // Duplicate Check (Only by Domain)
+        // Duplicate Check (ONLY by SourceID)
         // ==============================
         
-        // Match using the EmailDomain from Jitbit
-        const existingCompany = await searchCompanyByDomain(finalCompany.EmailDomain);
+        // Match using the sourceid (CompanyID)
+        const existingCompany = await searchCompanyBySourceId(finalCompany.CompanyID);
 
         if (existingCompany) {
           logger.info(
-            `⚠️ Company already exists in HubSpot (Skipping). Domain: ${existingCompany.properties.domain} | ID: ${existingCompany.id}`
+            `⚠️ Company already exists in HubSpot (Skipping). ID: ${existingCompany.id} | SourceID: ${existingCompany.properties.sourceid || "N/A"}`
           );
           continue; // Skip creating and move to the next company in the loop
         }

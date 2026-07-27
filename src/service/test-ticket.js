@@ -1533,7 +1533,6 @@
 
 // ...............................New Code //...............................................
 
-
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
 import logger from "../utils/logger.js";
@@ -1996,6 +1995,7 @@ function transformTicket(ticketRecord, customFields) {
     hs_pipeline: targetPipeline,
     hs_pipeline_stage: targetStage,
     issue_id: ticketRecord.IssueID.toString(),
+    sourceid: ticketRecord.IssueID.toString(), // Mapping sourceid directly
     subject: ticketRecord.Subject,
     createdate: ticketRecord.IssueDate,
   };
@@ -2132,40 +2132,35 @@ async function syncSingleTicket(ticketRecord) {
     return;
   }
 
-  const issueId = ticketRecord.IssueID;
-  const subject = ticketRecord.Subject;
-  logger.info(`🚀 Syncing Ticket ID: ${issueId}`);
+  logger.info(`🚀 Syncing Ticket ID: ${ticketRecord.IssueID}`);
 
   // =========================================================================
-  // NAYA LOGIC: HubSpot me Search karein ki Issue_ID aur Subject pehle se hai ya nahi
+  // ONLY SEARCH BY SOURCEID (No issueId or subject variables)
   // =========================================================================
   try {
     const searchResponse = await hubspotClient.crm.tickets.searchApi.doSearch({
       filterGroups: [
         {
           filters: [
-            { propertyName: "issue_id", operator: "EQ", value: issueId.toString() },
-            // { propertyName: "subject", operator: "EQ", value: subject }
+            { propertyName: "sourceid", operator: "EQ", value: ticketRecord.IssueID.toString() } 
           ]
         }
       ]
     });
 
     if (searchResponse.results && searchResponse.results.length > 0) {
-      // logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}, Subject: "${subject}"). Skipping...`); 
-      logger.info(`⏭️ Ticket already exists in HubSpot (IssueID: ${issueId}). Skipping...`);
+      logger.info(`⏭️ Ticket already exists in HubSpot (SourceID: ${ticketRecord.IssueID}). Skipping...`);
       return; 
     }
   } catch (error) {
-    logger.error(`❌ HubSpot Search Failed for IssueID ${issueId}: ${error.message}`);
-
+    logger.error(`❌ HubSpot Search Failed for SourceID ${ticketRecord.IssueID}: ${error.message}`);
     return; 
   }
   // =========================================================================
 
   let customFields = [];
   try {
-    customFields = await getTicketCustomFields(issueId);
+    customFields = await getTicketCustomFields(ticketRecord.IssueID);
   } catch (err) {
     logger.error(`⚠️ Failed to fetch custom fields: ${err.message}`);
   }
@@ -2180,7 +2175,7 @@ async function syncSingleTicket(ticketRecord) {
     ticketRecord.Email,
     ticketRecord.CompanyName,
   );
-  logger.info(`✅ Sync Completed for Ticket ID: ${issueId}`);
+  logger.info(`✅ Sync Completed for Ticket ID: ${ticketRecord.IssueID}`);
 }
 
 // ==========================================
@@ -2214,6 +2209,4 @@ async function syncAllTickets() {
 
 // Run the main process
 syncAllTickets();
-
-
 
