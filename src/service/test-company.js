@@ -268,7 +268,6 @@
 
 
 
-
 import "dotenv/config";
 import * as hubspot from "@hubspot/api-client";
 import logger from "../utils/logger.js";
@@ -291,66 +290,38 @@ const hubspotClient = new hubspot.Client({
 // Dynamic Formatting Helpers
 // ==========================================
 
-/**
- * Handles Jitbit labels that do not dynamically convert to exact HubSpot internal names.
- */
 const PROPERTY_OVERRIDES = {
   "Engineer Responsible for Billing": "engineer_responsible_billing",
   "ECI Notes (Pharmacy? Govt Ins no CoF? Etc)": "eci_notes",
   "EHR is the same as PM": "ehr_is_same_as_pm",
 };
 
-/**
- * These properties do not exist in your HubSpot portal.
- * If you send them, HubSpot will reject the entire payload with a 400 error.
- */
 const PROPERTIES_TO_IGNORE = [
   "HubSpot ID",
   "Uses HiP Kiosks (iPad app)",
-  // Add any future fields here if HubSpot throws a "PROPERTY_DOESNT_EXIST" error
 ];
 
-/**
- * Converts a Jitbit field label into a HubSpot-compatible internal property name.
- */
 function formatHubSpotProperty(label) {
   if (!label) return "";
-
-  // 1. Check if we have an explicit override for this label
-  if (PROPERTY_OVERRIDES[label]) {
-    return PROPERTY_OVERRIDES[label];
-  }
-
-  // 2. Otherwise, dynamically generate the snake_case name
+  if (PROPERTY_OVERRIDES[label]) return PROPERTY_OVERRIDES[label];
   return label
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_") // Replace spaces and special characters with underscores
-    .replace(/^_+|_+$/g, ""); // Remove trailing or leading underscores
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
-/**
- * Cleans up the values coming from Jitbit so HubSpot doesn't reject them.
- */
 function formatHubSpotValue(hubspotKey, value) {
   if (value === null || value === undefined) return "";
-
   let normalizedValue = value.toString().trim();
 
-  // Convert Jitbit checkmarks to a string boolean
-  if (normalizedValue === "✓") {
-    normalizedValue = "true";
-  }
+  if (normalizedValue === "✓") normalizedValue = "true";
 
-  // Handle specific Picklist formatting rules for HubSpot
   if (hubspotKey === "cost_estimator") {
     if (normalizedValue.toLowerCase() === "true") return "Yes";
     if (normalizedValue.toLowerCase() === "false") return "No";
   }
 
-  if (
-    hubspotKey === "client_status" &&
-    normalizedValue === "Disabled / Churned"
-  ) {
+  if (hubspotKey === "client_status" && normalizedValue === "Disabled / Churned") {
     return "Churned";
   }
 
@@ -358,28 +329,15 @@ function formatHubSpotValue(hubspotKey, value) {
 }
 
 // ==========================================
-// Search Existing Company (ONLY by Domain)
+// Search Existing Company (By Domain)
 // ==========================================
-
 async function searchCompanyByDomain(domain) {
-  if (!domain) return null; // Skip if domain is empty
-  
+  if (!domain) return null; 
   try {
     const response = await hubspotClient.crm.companies.searchApi.doSearch({
-      filterGroups: [
-        {
-          filters: [
-            {
-              propertyName: "domain",
-              operator: "EQ",
-              value: domain.trim(), // Stripping extra spaces
-            },
-          ],
-        },
-      ],
+      filterGroups: [{ filters: [{ propertyName: "domain", operator: "EQ", value: domain.trim() }] }],
       properties: ["domain", "name", "company_id"],
     });
-
     return response.results[0] || null;
   } catch (error) {
     logger.error(`Company Domain Search Failed for '${domain}': ${error.message}`);
@@ -388,36 +346,38 @@ async function searchCompanyByDomain(domain) {
 }
 
 // ==========================================
+// Search Existing Company (By Name)
+// ==========================================
+async function searchCompanyByName(name) {
+  if (!name) return null; 
+  try {
+    const response = await hubspotClient.crm.companies.searchApi.doSearch({
+      filterGroups: [{ filters: [{ propertyName: "name", operator: "EQ", value: name.trim() }] }],
+      properties: ["domain", "name", "company_id"],
+    });
+    return response.results[0] || null;
+  } catch (error) {
+    logger.error(`Company Name Search Failed for '${name}': ${error.message}`);
+    return null;
+  }
+}
+
+// ==========================================
 // Create Company in HubSpot
 // ==========================================
-
 async function createCompany(company, customFields) {
   try {
-    // ==============================
-    // Dynamic Custom Field Mapping
-    // ==============================
-
     const mappedProperties = {};
 
     customFields.forEach((field) => {
-      // Skip fields that do not exist in HubSpot
-      if (PROPERTIES_TO_IGNORE.includes(field.FieldName)) {
-        return;
-      }
-
-      // Dynamically generate the property name and clean the value
+      if (PROPERTIES_TO_IGNORE.includes(field.FieldName)) return;
       const hubspotProperty = formatHubSpotProperty(field.FieldName);
       const hubspotValue = formatHubSpotValue(hubspotProperty, field.Value);
-
       mappedProperties[hubspotProperty] = hubspotValue;
     });
 
     logger.info("========== DYNAMIC CUSTOM FIELD MAP ==========");
     logger.info(JSON.stringify(mappedProperties, null, 2));
-
-    // ==============================
-    // HubSpot Payload
-    // ==============================
 
     const payload = {
       name: company.Name || "",
@@ -434,20 +394,15 @@ async function createCompany(company, customFields) {
       properties: payload,
     });
 
-    logger.info(
-      `✅ Company Synced Successfully: ${company.Name} | HubSpot ID: ${response.id}`
-    );
+    logger.info(`✅ Company Synced Successfully: ${company.Name} | HubSpot ID: ${response.id}`);
 
-    // return response.id;
   } catch (error) {
     logger.error(`❌ Company Sync Failed: ${company.Name}`);
-
     if (error.response) {
       logger.error(JSON.stringify(error.response.body, null, 2));
     } else {
       logger.error(error.message);
     }
-
     return null;
   }
 }
@@ -455,7 +410,6 @@ async function createCompany(company, customFields) {
 // ==========================================
 // Sync All Companies (Production)
 // ==========================================
-
 async function syncCompany() {
   try {
     const companies = await getCompanies();
@@ -467,50 +421,50 @@ async function syncCompany() {
 
     logger.info(`🚀 Found ${companies.length} companies to sync.`);
 
-    // Loop through all fetched companies
     for (const company of companies) {
       try {
         logger.info(`🚀 Syncing Company: ${company.Name} (${company.CompanyID})`);
 
-        // ==============================
-        // Fetch Complete Company Details
-        // ==============================
-
         const companyDetails = await getCompanyDetails(company.CompanyID);
-
-        // ==============================
-        // Fetch Custom Fields
-        // ==============================
-
         const customFields = await getCompanyCustomFields(company.CompanyID);
 
-        // Merge Jitbit Company Data
-        const finalCompany = {
-          ...company,
-          ...companyDetails,
-        };
-
-        logger.info("========== FINAL COMPANY DATA ==========");
-        // logger.info(JSON.stringify(finalCompany, null, 2));
+        const finalCompany = { ...company, ...companyDetails };
 
         // ==============================
-        // Duplicate Check (Only by Domain)
+        // FIX: Clean up Domain Formatting (Remove '@' and take only the first domain if multiple)
         // ==============================
-        
-        // Match using the EmailDomain from Jitbit
-        const existingCompany = await searchCompanyByDomain(finalCompany.EmailDomain);
+        if (finalCompany.EmailDomain) {
+          let cleanDomain = finalCompany.EmailDomain.replace(/^@/, "").trim();
+          
+          // Agar semicolon (;) ya comma (,) se multiple domains aa rahe hain, toh sirf pehla wala lo
+          if (cleanDomain.includes(";")) {
+            cleanDomain = cleanDomain.split(";")[0].trim();
+          } else if (cleanDomain.includes(",")) {
+            cleanDomain = cleanDomain.split(",")[0].trim();
+          }
+
+          finalCompany.EmailDomain = cleanDomain;
+        }
+
+        // ==============================
+        // Duplicate Check (Name First, then Domain)
+        // ==============================
+        let existingCompany = await searchCompanyByName(finalCompany.Name);
+
+        if (!existingCompany && finalCompany.EmailDomain) {
+          existingCompany = await searchCompanyByDomain(finalCompany.EmailDomain);
+        }
 
         if (existingCompany) {
           logger.info(
-            `⚠️ Company already exists in HubSpot (Skipping). Domain: ${existingCompany.properties.domain} | ID: ${existingCompany.id}`
+            `⚠️ Company already exists in HubSpot (Skipping). Name: ${existingCompany.properties.name} | ID: ${existingCompany.id}`
           );
-          continue; // Skip creating and move to the next company in the loop
+          continue; 
         }
 
         await createCompany(finalCompany, customFields);
 
       } catch (companyError) {
-        // Log the error for this specific company but don't stop the whole loop
         logger.error(`❌ Failed to process company ${company.Name || company.CompanyID}: ${companyError.message}`);
       }
     }
@@ -524,12 +478,9 @@ async function syncCompany() {
 // ==========================================
 // Run
 // ==========================================
-
 async function runSync() {
   logger.info("🚀 Starting Jitbit → HubSpot Company Sync...");
-
   await syncCompany();
-
   logger.info("🎉 Process Finished.");
 }
 
